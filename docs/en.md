@@ -63,7 +63,9 @@ personal home automation, and it works exactly the same for Gladys.
 4. Optionally adjust the **refresh interval** (900 seconds by default).
 5. Save, then click **Test the connection**: the current carbon intensity of
    your zone is displayed under the button.
-6. The device appears in the **Discovery** tab, ready to be added.
+6. The device appears in the **Discovery** tab, ready to be added. As long as
+   the API key is not saved, the integration offers **no device at all**: it
+   could only show empty sensors.
 
 ### Refresh interval
 
