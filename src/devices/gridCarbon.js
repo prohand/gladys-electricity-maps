@@ -18,12 +18,12 @@
 // key does not burn a request per poll on an endpoint it may not call.
 // -----------------------------------------------------------------------------
 
+import { createLogger, DEVICE_FEATURE_UNITS } from '@gladysassistant/integration-sdk';
 import {
-  createLogger,
-  DEVICE_FEATURE_CATEGORIES,
-  DEVICE_FEATURE_TYPES,
-  DEVICE_FEATURE_UNITS,
-} from '@gladysassistant/integration-sdk';
+  GRAM_CO2EQ_PER_KILOWATT_HOUR,
+  GRID_CARBON_SENSOR,
+  GRID_CARBON_TYPES,
+} from '../features.js';
 import { fetchGridStatus, fetchPowerBreakdown } from '../electricityMaps.js';
 
 const DEVICE_TYPE = 'grid-carbon';
@@ -31,11 +31,13 @@ const DEVICE_TYPE = 'grid-carbon';
 // Named logger from the SDK: every line is prefixed with [grid-carbon].
 const logger = createLogger({ name: DEVICE_TYPE });
 
-// Feature keys, kept in one place so discovery and polling always agree.
+// Feature keys, kept in one place so discovery and polling always agree. They
+// are the core's own type names: one sensor per type, so the external_id stays
+// readable in the logs and in the Gladys UI.
 const FEATURE = {
-  CARBON_INTENSITY: 'carbon-intensity',
-  CARBON_FREE: 'carbon-free-percentage',
-  RENEWABLE: 'renewable-percentage',
+  CARBON_INTENSITY: GRID_CARBON_TYPES.CARBON_INTENSITY,
+  CARBON_FREE: GRID_CARBON_TYPES.CARBON_FREE_PERCENTAGE,
+  RENEWABLE: GRID_CARBON_TYPES.RENEWABLE_PERCENTAGE,
 };
 
 // Upper bound of the carbon intensity gauge. The dirtiest zones sit around
@@ -61,12 +63,13 @@ export const gridCarbon = {
       // driven by src/poller.js.
       features: [
         {
-          // No standard Gladys unit exists for gCO2eq/kWh, so the unit lives in
-          // the feature name and the category stays the generic one.
-          name: 'Carbon intensity (gCO₂eq/kWh)',
+          // The unit is declared, not written in the name: Gladys renders it
+          // next to the value (57 gCO₂eq/kWh).
+          name: 'Carbon intensity',
           external_id: ids.feature(FEATURE.CARBON_INTENSITY),
-          category: DEVICE_FEATURE_CATEGORIES.UNKNOWN,
-          type: DEVICE_FEATURE_TYPES.UNKNOWN.UNKNOWN,
+          category: GRID_CARBON_SENSOR,
+          type: GRID_CARBON_TYPES.CARBON_INTENSITY,
+          unit: GRAM_CO2EQ_PER_KILOWATT_HOUR,
           min: 0,
           max: MAX_CARBON_INTENSITY,
           read_only: true, // sensor: nothing to command
@@ -76,8 +79,8 @@ export const gridCarbon = {
         {
           name: 'Carbon-free electricity',
           external_id: ids.feature(FEATURE.CARBON_FREE),
-          category: DEVICE_FEATURE_CATEGORIES.UNKNOWN,
-          type: DEVICE_FEATURE_TYPES.UNKNOWN.UNKNOWN,
+          category: GRID_CARBON_SENSOR,
+          type: GRID_CARBON_TYPES.CARBON_FREE_PERCENTAGE,
           unit: DEVICE_FEATURE_UNITS.PERCENT,
           min: 0,
           max: 100,
@@ -88,8 +91,8 @@ export const gridCarbon = {
         {
           name: 'Renewable electricity',
           external_id: ids.feature(FEATURE.RENEWABLE),
-          category: DEVICE_FEATURE_CATEGORIES.UNKNOWN,
-          type: DEVICE_FEATURE_TYPES.UNKNOWN.UNKNOWN,
+          category: GRID_CARBON_SENSOR,
+          type: GRID_CARBON_TYPES.RENEWABLE_PERCENTAGE,
           unit: DEVICE_FEATURE_UNITS.PERCENT,
           min: 0,
           max: 100,

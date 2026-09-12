@@ -18,6 +18,12 @@ One device, named after the zone you follow (for example
 
 All three keep their history, so they show up as charts on your dashboard.
 
+They belong to the Gladys **Grid carbon sensor** category: that is what gives
+them their name, icon and unit in the UI. If your Gladys version does not know
+that category yet, the integration publishes them as generic sensors instead:
+they then read as **"Unknown"**, with the same values. Update Gladys to get the
+real labels.
+
 The free **Home Assistant** key opens a single API endpoint: the one serving
 the carbon intensity and the fossil share (hence the carbon-free share, its
 complement). The renewable share comes from another endpoint, reserved to the
@@ -88,6 +94,18 @@ Gladys.
 | `Unknown zone (HTTP 404)`          | Check the identifier against the list of zones                     |
 | `quota exceeded (HTTP 429)`        | Increase the refresh interval, or wait for the quota to reset      |
 | `Electricity Maps unreachable`     | Network or DNS problem on the Gladys host                          |
+
+### The sensors still read "Unknown"
+
+Two possible causes:
+
+1. **Your Gladys does not know the category yet.** The integration logs say so
+   (`does not know the grid carbon sensors yet`): update Gladys, then do step 2.
+2. **The device was created before.** Gladys never rewrites the feature
+   categories of an already-created device: delete the
+   `Electricity Maps (...)` device in **Settings → Devices**, then add it again
+   from the integration's **Discovery** tab. The old device's history is lost,
+   the values start over.
 
 The integration logs everything it does: check the integration logs from the
 Gladys UI (or `docker logs` on the host) with `LOG_LEVEL=debug` for the full

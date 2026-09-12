@@ -6,6 +6,11 @@ import {
   buildDiscoveredDevices,
   findBlueprintByDevice,
 } from '../src/devices/index.js';
+import {
+  GRAM_CO2EQ_PER_KILOWATT_HOUR,
+  GRID_CARBON_SENSOR,
+  GRID_CARBON_TYPES,
+} from '../src/features.js';
 import { normalizeConfig } from '../src/config.js';
 import { createFakeGladys } from './helpers/fakeGladys.js';
 
@@ -100,6 +105,35 @@ test('every feature is a read-only sensor kept in history', () => {
     assert.equal(feature.keep_history, true, `${feature.name} must be charted over time`);
     assert.ok(feature.name, 'each feature is named');
   }
+});
+
+test('every feature is published in the grid carbon category', () => {
+  // This is what makes Gladys name, group and chart the sensors instead of
+  // showing three "Unknown" features.
+  const gladys = createFakeGladys();
+  const [device] = buildDiscoveredDevices(gladys, config);
+  for (const feature of device.features) {
+    assert.equal(feature.category, GRID_CARBON_SENSOR, `${feature.name} category`);
+  }
+  assert.deepEqual(
+    device.features.map((f) => f.type),
+    [
+      GRID_CARBON_TYPES.CARBON_INTENSITY,
+      GRID_CARBON_TYPES.CARBON_FREE_PERCENTAGE,
+      GRID_CARBON_TYPES.RENEWABLE_PERCENTAGE,
+    ],
+    'one feature per type of the category',
+  );
+});
+
+test('the carbon intensity declares the gCO2eq/kWh unit, not a unit in its name', () => {
+  const gladys = createFakeGladys();
+  const [device] = buildDiscoveredDevices(gladys, config);
+  const [intensity] = device.features;
+  assert.equal(intensity.unit, GRAM_CO2EQ_PER_KILOWATT_HOUR);
+  assert.doesNotMatch(intensity.name, /kWh/, 'Gladys renders the unit itself');
+  assert.equal(intensity.min, 0);
+  assert.ok(intensity.max > 900, 'the dirtiest zones must fit in the gauge');
 });
 
 test('the percentage features declare the percent unit and a 0-100 range', () => {

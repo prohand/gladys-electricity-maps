@@ -19,6 +19,12 @@ Un appareil, nommé d'après la zone suivie (par exemple
 Les trois conservent leur historique : ils s'affichent en graphique sur votre
 tableau de bord.
 
+Ils appartiennent à la catégorie **Capteur carbone du réseau** de Gladys : c'est
+ce qui leur donne leur nom, leur icône et leur unité dans l'interface. Si votre
+version de Gladys ne connaît pas encore cette catégorie, l'intégration les
+publie en capteurs génériques : ils s'affichent alors en **« Inconnu »**, avec
+les mêmes valeurs. Mettez Gladys à jour pour récupérer les vrais libellés.
+
 La clé gratuite **Home Assistant** donne accès à un seul point d'entrée de
 l'API, celui qui sert l'intensité carbone et la part fossile (donc la part
 décarbonée, son complément). La part renouvelable vient d'un autre point
@@ -93,6 +99,19 @@ Gladys.
 | `Unknown zone (HTTP 404)`          | Vérifiez l'identifiant dans la liste des zones                       |
 | `quota exceeded (HTTP 429)`        | Augmentez l'intervalle, ou attendez la remise à zéro du quota        |
 | `Electricity Maps unreachable`     | Problème réseau ou DNS sur l'hôte Gladys                             |
+
+### Les capteurs restent affichés en « Inconnu »
+
+Deux causes possibles :
+
+1. **Votre Gladys ne connaît pas encore la catégorie.** Les logs de
+   l'intégration le disent (`does not know the grid carbon sensors yet`) :
+   mettez Gladys à jour, puis reprenez le point 2.
+2. **L'appareil a été créé avant.** Gladys ne réécrit pas la catégorie des
+   fonctionnalités d'un appareil déjà créé : supprimez l'appareil
+   `Electricity Maps (...)` dans **Réglages → Appareils**, puis ajoutez-le à
+   nouveau depuis l'onglet **Découverte** de l'intégration. L'historique de
+   l'ancien appareil est perdu, les valeurs repartent de zéro.
 
 L'intégration journalise tout ce qu'elle fait : consultez les logs de
 l'intégration depuis l'interface Gladys (ou `docker logs` sur l'hôte) avec

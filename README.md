@@ -14,11 +14,28 @@ and the SDK
 One device per zone (`Electricity Maps (FR)`, `Electricity Maps (DE)`…) with
 three read-only, history-keeping sensors:
 
-| Feature                 | Unit       | API source                       | Free plan |
-| ----------------------- | ---------- | -------------------------------- | --------- |
-| Carbon intensity        | gCO₂eq/kWh | `GET /v3/home-assistant`         | Yes       |
-| Carbon-free electricity | %          | `GET /v3/home-assistant`         | Yes       |
-| Renewable electricity   | %          | `GET /v3/power-breakdown/latest` | No        |
+| Feature                 | Type                     | Unit       | API source                       | Free plan |
+| ----------------------- | ------------------------ | ---------- | -------------------------------- | --------- |
+| Carbon intensity        | `carbon-intensity`       | gCO₂eq/kWh | `GET /v3/home-assistant`         | Yes       |
+| Carbon-free electricity | `carbon-free-percentage` | %          | `GET /v3/home-assistant`         | Yes       |
+| Renewable electricity   | `renewable-percentage`   | %          | `GET /v3/power-breakdown/latest` | No        |
+
+The three are published in the core's **`grid-carbon-sensor`** category (see
+`src/features.js`): that is what gives them their Gladys name, icon, unit and
+chart grouping. A Gladys that does not know the category yet rejects the whole
+discovery payload with `400 unknown category`, so the integration republishes
+the same sensors as generic `unknown` features — they show up as "Unknown" in
+the UI, but they show up, and the values are the same.
+
+Two consequences worth knowing:
+
+- the category, the types and the unit (`gram-co2eq-per-kilowatt-hour`) are not
+  exported by the published SDK yet, so `src/features.js` mirrors the core
+  strings and prefers the SDK constants as soon as a release carries them;
+- the core upserts the **params** of an already-created device on re-publish,
+  never its feature categories: a device created while the fallback was active
+  keeps its "Unknown" features. Delete it and re-add it from the **Discovery**
+  screen to get the real ones.
 
 `/v3/home-assistant` is the only endpoint the free "Home Assistant" access
 serves; it returns the carbon intensity and the fossil share, whose complement
@@ -83,6 +100,7 @@ rather than rewriting the history of the previous one.
 │  ├─ devices/
 │  │  ├─ index.js                    #   device registry
 │  │  └─ gridCarbon.js               #   the grid device: features + onPoll
+│  ├─ features.js                    # Gladys feature category/types/unit (+ fallback)
 │  ├─ electricityMaps.js             # Electricity Maps API driver (the only fetch)
 │  ├─ poller.js                      # internal refresh loop (Gladys caps polling at 1 min)
 │  └─ config.js                      # config defaults, normalization, clamping
