@@ -18,11 +18,7 @@
 import { GladysIntegration, logger } from '@gladysassistant/integration-sdk';
 import { normalizeConfig, isConfigured } from './src/config.js';
 import { createPoller } from './src/poller.js';
-import {
-  DEVICE_BLUEPRINTS,
-  buildDiscoveredDevices,
-  findBlueprintByDevice,
-} from './src/devices/index.js';
+import { DEVICE_BLUEPRINTS, publishDevices, findBlueprintByDevice } from './src/devices/index.js';
 
 const gladys = new GladysIntegration();
 
@@ -41,7 +37,7 @@ const NOT_CONFIGURED_MESSAGE = {
 // --- Discovery: Gladys asks for the list of devices --------------------------
 gladys.onScanRequest(async () => {
   logger.info('onScanRequest -> publishing discovered devices');
-  await gladys.publishDiscoveredDevices(buildDiscoveredDevices(gladys, config));
+  await publishDevices(gladys, config);
 });
 
 // --- Polling: refresh a device -----------------------------------------------
@@ -98,8 +94,8 @@ gladys.onConfigUpdated(async (newConfig) => {
   logger.info('onConfigUpdated -> new configuration received');
   config = normalizeConfig(newConfig);
   // Re-publish the devices: the zone lives in the discovery payload, and
-  // publishDiscoveredDevices is idempotent (upsert by external_id).
-  await gladys.publishDiscoveredDevices(buildDiscoveredDevices(gladys, config));
+  // publishing is idempotent (upsert by external_id).
+  await publishDevices(gladys, config);
   await reportConfigurationStatus();
   // Apply the new refresh interval (and read the new zone/token right away).
   poller.sync(config.poll_frequency);
@@ -115,7 +111,7 @@ gladys.on('connected', async () => {
     config = normalizeConfig(await gladys.getConfig());
 
     // 2) (Re)publish the devices as soon as we are connected.
-    await gladys.publishDiscoveredDevices(buildDiscoveredDevices(gladys, config));
+    await publishDevices(gladys, config);
 
     // 3) Report the application-level status, shown in the Configuration
     // screen. Distinct from the container state machine: an integration can be
