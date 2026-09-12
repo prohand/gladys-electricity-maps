@@ -99,3 +99,23 @@ test('any other publication error keeps bubbling up', async () => {
   await assert.rejects(() => publishDevices(gladys, config), /Invalid token/);
   assert.equal(gladys.publishedDevices.length, 1, 'no blind retry');
 });
+
+test('nothing is published while the API token is missing', async () => {
+  // Reported bug: the device showed up in the Discovery screen before the user
+  // had pasted any token, with sensors nothing could ever fill.
+  const gladys = createFakeGladys();
+
+  const published = await publishDevices(gladys, normalizeConfig({ zone: 'FR' }));
+
+  assert.equal(published, false, 'publishDevices reports it published nothing');
+  assert.equal(gladys.publishedDevices.length, 0, 'no discovery payload sent');
+});
+
+test('nothing is published while the zone is missing either', async () => {
+  const gladys = createFakeGladys();
+
+  const published = await publishDevices(gladys, normalizeConfig({ api_token: 't', zone: '' }));
+
+  assert.equal(published, false);
+  assert.equal(gladys.publishedDevices.length, 0);
+});

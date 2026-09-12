@@ -40,9 +40,15 @@ const NOT_CONFIGURED_MESSAGE = {
 };
 
 // --- Discovery: Gladys asks for the list of devices --------------------------
+// Nothing is published while the token or the zone is missing (publishDevices
+// checks it): a device offered then would be created with sensors nothing can
+// ever fill.
 gladys.onScanRequest(async () => {
   logger.info('onScanRequest -> publishing discovered devices');
-  await publishDevices(gladys, config);
+  const published = await publishDevices(gladys, config);
+  if (!published) {
+    await reportConfigurationStatus();
+  }
 });
 
 // --- Polling: refresh a device -----------------------------------------------
@@ -138,7 +144,8 @@ gladys.onConfigUpdated(async (newConfig) => {
   const previous = config;
   config = normalizeConfig(newConfig);
   // Re-publish the devices: the zone lives in the discovery payload, and
-  // publishing is idempotent (upsert by external_id).
+  // publishing is idempotent (upsert by external_id). This is also where they
+  // first show up, since nothing is published before the token is saved.
   await publishDevices(gladys, config);
   await reportConfigurationStatus();
   // Apply the new refresh interval. It refreshes on its own when the interval
@@ -164,7 +171,8 @@ gladys.on('connected', async () => {
     // 1) Fetch the config filled in by the user.
     config = normalizeConfig(await gladys.getConfig());
 
-    // 2) (Re)publish the devices as soon as we are connected.
+    // 2) (Re)publish the devices as soon as we are connected. A configuration
+    // still empty publishes nothing: step 3 tells the user why.
     await publishDevices(gladys, config);
 
     // 3) Report the application-level status, shown in the Configuration

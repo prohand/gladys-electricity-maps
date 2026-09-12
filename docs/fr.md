@@ -67,7 +67,9 @@ Gladys.
    défaut).
 5. Enregistrez, puis cliquez sur **Tester la connexion** : l'intensité carbone
    actuelle de votre zone s'affiche sous le bouton.
-6. L'appareil apparaît dans l'onglet **Découverte**, prêt à être ajouté.
+6. L'appareil apparaît dans l'onglet **Découverte**, prêt à être ajouté. Tant
+   que la clé API n'est pas enregistrée, l'intégration ne propose **aucun
+   appareil** : il ne pourrait afficher que des capteurs vides.
 
 ### Intervalle de rafraîchissement
 

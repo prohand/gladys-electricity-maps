@@ -20,6 +20,7 @@
 // -----------------------------------------------------------------------------
 
 import { createLogger } from '@gladysassistant/integration-sdk';
+import { isConfigured } from '../config.js';
 import { toUnknownFeatures } from '../features.js';
 import { gridCarbon } from './gridCarbon.js';
 
@@ -45,13 +46,24 @@ export function buildDiscoveredDevices(gladys, config) {
  * rejects the WHOLE payload with a 400, which would leave the user with no
  * device at all rather than with badly labelled ones. The decision is taken
  * once and kept for the process lifetime.
+ *
+ * Nothing is published while the configuration is incomplete: without a token
+ * the device could never hold a single value, and offering it in the Discovery
+ * screen only gets it created with sensors stuck on "no recent value". The
+ * devices appear as soon as the token is saved (onConfigUpdated re-publishes).
  * @param {object} gladys SDK instance
  * @param {ReturnType<typeof import('../config.js').normalizeConfig>} config
+ * @returns {Promise<boolean>} whether the payload was published
  */
 export async function publishDevices(gladys, config) {
+  if (!isConfigured(config)) {
+    logger.warn('Discovery skipped: no API token or zone configured yet');
+    return false;
+  }
   await probeCapabilities(gladys, config);
   try {
     await gladys.publishDiscoveredDevices(buildDiscoveredDevices(gladys, config));
+    return true;
   } catch (err) {
     if (unknownFeaturesFallback || !isUnknownFeatureError(err)) {
       throw err;
@@ -63,6 +75,7 @@ export async function publishDevices(gladys, config) {
     );
     unknownFeaturesFallback = true;
     await gladys.publishDiscoveredDevices(buildDiscoveredDevices(gladys, config));
+    return true;
   }
 }
 
