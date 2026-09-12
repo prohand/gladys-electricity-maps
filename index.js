@@ -55,6 +55,33 @@ gladys.onPoll(async (device) => {
   await blueprint.onPoll(gladys, config);
 });
 
+// --- Device created by the user ----------------------------------------------
+// Discovery only publishes the device description; its features stay empty
+// until a refresh lands, and the states sent by an earlier tick were dropped by
+// Gladys because the device did not exist yet. Without this handler the user
+// waits up to a full `poll_frequency` (15 minutes by default) in front of empty
+// sensors.
+gladys.onDeviceCreated(async (device) => {
+  const blueprint = findBlueprintByDevice(gladys, device, config);
+  if (!blueprint) {
+    logger.warn(
+      `onDeviceCreated ignored: ${device.external_id} does not match zone ${config.zone}`,
+    );
+    return;
+  }
+  if (!isConfigured(config)) {
+    logger.warn('Device created but no API token or zone configured yet');
+    return;
+  }
+  try {
+    await blueprint.onDeviceCreated(gladys, config);
+  } catch (err) {
+    // The refresh loop will retry on its next tick: creating the device must
+    // not fail because Electricity Maps is momentarily unreachable.
+    logger.error(`First read of ${blueprint.key} failed`, err);
+  }
+});
+
 /**
  * One tick of the refresh loop: read every device type in turn. A blueprint
  * failing must not skip the next one, so each is awaited on its own.
@@ -92,14 +119,25 @@ for (const blueprint of DEVICE_BLUEPRINTS) {
 // --- Configuration updated by the user ---------------------------------------
 gladys.onConfigUpdated(async (newConfig) => {
   logger.info('onConfigUpdated -> new configuration received');
+  const previous = config;
   config = normalizeConfig(newConfig);
   // Re-publish the devices: the zone lives in the discovery payload, and
   // publishing is idempotent (upsert by external_id).
   await publishDevices(gladys, config);
   await reportConfigurationStatus();
-  // Apply the new refresh interval (and read the new zone/token right away).
-  poller.sync(config.poll_frequency);
+  // Apply the new refresh interval. It refreshes on its own when the interval
+  // changed, but a user who only pasted their token or picked another zone
+  // would otherwise face empty sensors until the next tick.
+  const restarted = poller.sync(config.poll_frequency);
+  if (!restarted && credentialsChanged(previous, config)) {
+    await poller.refreshNow();
+  }
 });
+
+/** Did the user change what we read, rather than how often we read it? */
+function credentialsChanged(previous, current) {
+  return previous.api_token !== current.api_token || previous.zone !== current.zone;
+}
 
 // --- Connection lifecycle ----------------------------------------------------
 // The SDK itself logs the WebSocket lifecycle (connections, disconnections,

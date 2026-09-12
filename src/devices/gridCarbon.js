@@ -16,6 +16,11 @@
 // needs the power breakdown, which the free "Home Assistant" access refuses
 // (401). It is therefore tried once per token+zone and then dropped, so a free
 // key does not burn a request per poll on an endpoint it may not call.
+//
+// The states published before the user actually creates the device are lost
+// (Gladys has nowhere to store them yet), so the last batch is kept in memory
+// and replayed by `onDeviceCreated`: the device shows its values immediately
+// instead of waiting for the next tick of the refresh loop.
 // -----------------------------------------------------------------------------
 
 import { createLogger, DEVICE_FEATURE_UNITS } from '@gladysassistant/integration-sdk';
@@ -165,8 +170,47 @@ export const gridCarbon = {
 
     // Publish every value in a single request (batch, up to 100).
     await gladys.publishStates(states);
+    rememberStates(config, states);
+  },
+
+  /**
+   * The user just created the device from the discovery list. Its features are
+   * empty until the next tick of the refresh loop, up to `poll_frequency`
+   * away: publish something now. The states read by an earlier tick were sent
+   * while the device did not exist yet, so Gladys dropped them; replaying that
+   * batch costs no API request, and only a cache older than one refresh
+   * interval is worth a live read.
+   */
+  async onDeviceCreated(gladys, config) {
+    const cached = takeFreshStates(config);
+    if (cached) {
+      logger.info(`Device created: replaying the last known values for zone ${config.zone}`);
+      await gladys.publishStates(cached);
+      return;
+    }
+    logger.info(`Device created: reading Electricity Maps for zone ${config.zone}`);
+    await this.onPoll(gladys, config);
   },
 };
+
+// Last batch published for a given token+zone, replayed on device creation.
+let lastStates = { key: null, at: 0, states: null };
+
+function rememberStates(config, states) {
+  lastStates = { key: planKey(config), at: Date.now(), states };
+}
+
+/**
+ * The cached batch when it is no older than one refresh interval (past that,
+ * the loop would have replaced it anyway), otherwise null.
+ */
+function takeFreshStates(config) {
+  if (lastStates.key !== planKey(config) || lastStates.states === null) {
+    return null;
+  }
+  const ageSeconds = (Date.now() - lastStates.at) / 1000;
+  return ageSeconds <= config.poll_frequency ? lastStates.states : null;
+}
 
 // Plans that refuse the power breakdown (the free "Home Assistant" access is
 // one of them) answer 401/403 to every call: remember it and stop asking, so a
