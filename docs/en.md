@@ -1,0 +1,80 @@
+# Electricity Maps
+
+This integration reads the **carbon intensity of the electricity grid** from
+[Electricity Maps](https://www.electricitymaps.com/) and exposes it in Gladys as
+sensors you can chart, and use in scenes to run your appliances when the
+electricity is cleanest.
+
+## What you get
+
+One device, named after the zone you follow (for example
+`Electricity Maps (FR)`), with three sensors:
+
+| Sensor                  | Unit       | Meaning                                                     |
+| ----------------------- | ---------- | ----------------------------------------------------------- |
+| Carbon intensity        | gCO₂eq/kWh | Emissions of the electricity consumed in the zone right now |
+| Carbon-free electricity | %          | Share coming from renewables **and** nuclear                |
+| Renewable electricity   | %          | Share coming from renewables only                           |
+
+All three keep their history, so they show up as charts on your dashboard.
+
+## Get an API token
+
+1. Create a free account on the
+   [Electricity Maps portal](https://portal.electricitymaps.com/).
+2. Copy the **API token** shown in the portal.
+3. Note your **zone**: the free personal plan gives access to one zone (your
+   home zone). Zone identifiers look like `FR`, `DE`, `ES`, `GB` or
+   `US-CAL-CISO`; the full list is served by
+   <https://api.electricitymap.org/v3/zones>.
+
+## Configuration
+
+1. Open the **Configuration** tab of the integration.
+2. Paste your **API token**.
+3. Set the **zone** to follow (`FR` by default).
+4. Optionally adjust the **refresh interval** (900 seconds by default).
+5. Save, then click **Test the connection**: the current carbon intensity of
+   your zone is displayed under the button.
+6. The device appears in the **Discovery** tab, ready to be added.
+
+### Refresh interval
+
+Gladys owns the polling: the interval you set is attached to the device and
+Gladys asks the integration to refresh at that pace. Electricity Maps updates
+its data roughly **once an hour**, and free plans have a monthly request quota,
+so there is nothing to gain from polling faster. The value is capped between
+**300 s** (5 minutes) and **86 400 s** (1 day), and changing it applies
+immediately — no restart needed.
+
+### Changing zone
+
+The zone is part of the device identity: switching to another zone creates a
+**new** device. The old one stops being refreshed and can be deleted from
+Gladys.
+
+## Ideas of scenes
+
+- Start the dishwasher or charge the car when the carbon intensity drops below
+  a threshold you choose.
+- Send yourself a notification when the carbon-free share goes above 90 %.
+- Chart your own consumption next to the grid intensity to see the CO₂ cost of
+  your habits.
+
+## Troubleshooting
+
+| Message                           | What to do                                                    |
+| --------------------------------- | ------------------------------------------------------------- |
+| `Invalid API token (HTTP 401)`    | Re-copy the token from the portal; it is stored as a secret   |
+| `Zone ... not allowed (HTTP 403)` | Your plan does not cover this zone — use your home zone       |
+| `Unknown zone (HTTP 404)`         | Check the identifier against the list of zones                |
+| `quota exceeded (HTTP 429)`       | Increase the refresh interval, or wait for the quota to reset |
+| `Electricity Maps unreachable`    | Network or DNS problem on the Gladys host                     |
+
+The integration logs everything it does: check the integration logs from the
+Gladys UI (or `docker logs` on the host) with `LOG_LEVEL=debug` for the full
+detail.
+
+Some zones do not publish a power breakdown at every hour. When that happens
+the carbon intensity is still published and the two percentages are simply
+skipped for that round, instead of being written as a bogus `0`.

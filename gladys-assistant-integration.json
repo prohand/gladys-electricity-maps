@@ -1,0 +1,79 @@
+{
+  "manifest_version": 1,
+  "type": "device",
+  "name": "Electricity Maps",
+  "description": {
+    "en": "Live carbon intensity and carbon-free share of your electricity grid.",
+    "fr": "Intensité carbone et part d'électricité décarbonée de votre réseau."
+  },
+  "version": "1.0.0",
+  "docker_image": "ghcr.io/prohand/gladys-electricity-maps:1.0.0",
+  "gladys_version": ">=4.86.0",
+  "cover_image": "https://raw.githubusercontent.com/prohand/gladys-electricity-maps/main/cover.png",
+  "categories": ["energy", "environment"],
+  "transports": ["cloud"],
+  "config_schema": [
+    {
+      "key": "intro",
+      "type": "section",
+      "label": { "en": "Getting started", "fr": "Pour commencer" },
+      "description": {
+        "en": "Electricity Maps publishes the carbon intensity of electricity grids worldwide. Create a free personal account, copy your API token, then set the zone you want to follow (for example FR, DE or US-CAL-CISO).",
+        "fr": "Electricity Maps publie l'intensité carbone des réseaux électriques dans le monde. Créez un compte personnel gratuit, copiez votre token API, puis indiquez la zone à suivre (par exemple FR, DE ou US-CAL-CISO)."
+      },
+      "links": [
+        {
+          "url": "https://portal.electricitymaps.com/",
+          "label": { "en": "Get a free API token", "fr": "Obtenir un token API gratuit" }
+        },
+        {
+          "url": "https://api.electricitymap.org/v3/zones",
+          "label": { "en": "List of available zones", "fr": "Liste des zones disponibles" }
+        }
+      ]
+    },
+    {
+      "key": "api_token",
+      "type": "secret",
+      "label": { "en": "API token", "fr": "Token API" },
+      "description": {
+        "en": "Personal API token from the Electricity Maps portal.",
+        "fr": "Token API personnel obtenu sur le portail Electricity Maps."
+      },
+      "required": true,
+      "placeholder": { "en": "Your Electricity Maps token", "fr": "Votre token Electricity Maps" }
+    },
+    {
+      "key": "zone",
+      "type": "string",
+      "label": { "en": "Zone", "fr": "Zone" },
+      "description": {
+        "en": "Identifier of the grid zone to follow, e.g. FR, DE, US-CAL-CISO. Free accounts are limited to their home zone.",
+        "fr": "Identifiant de la zone à suivre, par exemple FR, DE, US-CAL-CISO. Les comptes gratuits sont limités à leur zone d'origine."
+      },
+      "required": true,
+      "default": "FR",
+      "placeholder": { "en": "FR", "fr": "FR" }
+    },
+    {
+      "key": "poll_frequency",
+      "type": "number",
+      "label": { "en": "Refresh interval (s)", "fr": "Intervalle de rafraîchissement (s)" },
+      "description": {
+        "en": "How often the zone is polled, in seconds. Electricity Maps refreshes about once an hour and free plans have a monthly request quota: 900 s is a good balance.",
+        "fr": "Fréquence d'interrogation de la zone, en secondes. Electricity Maps se met à jour environ une fois par heure et les offres gratuites ont un quota mensuel de requêtes : 900 s est un bon compromis."
+      },
+      "required": false,
+      "default": 900,
+      "min": 300,
+      "max": 86400
+    }
+  ],
+  "actions": [
+    {
+      "key": "test_connection",
+      "label": { "en": "Test the connection", "fr": "Tester la connexion" },
+      "timeout_seconds": 30
+    }
+  ]
+}
