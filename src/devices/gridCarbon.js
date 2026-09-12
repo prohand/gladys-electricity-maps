@@ -1,10 +1,11 @@
 // -----------------------------------------------------------------------------
 // Device type: ELECTRICITY GRID (one per Electricity Maps zone)
 //
-// Read-only sensors refreshed by POLLING: Gladys owns the timer. The device
-// declares `poll_frequency` (in seconds, from the user configuration) in its
-// discovery payload, and Gladys calls `onPoll` at that interval — the
-// integration never runs a setInterval of its own.
+// Read-only sensors refreshed by POLLING. The device is published WITHOUT a
+// `poll_frequency`: the core only accepts a closed list of values capped at one
+// minute, far too fast for an API refreshed hourly and metered monthly. The
+// timer therefore lives in the integration (src/poller.js), which calls
+// `onPoll` at the interval chosen by the user.
 //
 // Three values, all for the electricity actually CONSUMED in the zone:
 //   - carbon intensity, in gCO2eq/kWh;
@@ -51,8 +52,8 @@ export const gridCarbon = {
     return {
       name: `Electricity Maps (${config.zone})`,
       external_id: ids.device,
-      // Gladys calls onPoll at this interval, in seconds.
-      poll_frequency: config.poll_frequency,
+      // No `poll_frequency` here on purpose: see the header, the refresh is
+      // driven by src/poller.js.
       features: [
         {
           // No standard Gladys unit exists for gCO2eq/kWh, so the unit lives in
