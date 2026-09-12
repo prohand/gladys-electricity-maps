@@ -1,11 +1,21 @@
 // -----------------------------------------------------------------------------
 // Driver of the Electricity Maps API (https://portal.electricitymaps.com).
 //
-// This is the only file that talks to the outside world. Two endpoints of the
-// free "personal" plan are used, both for the zone configured by the user:
-//   - GET /v3/carbon-intensity/latest -> gCO2eq per kWh consumed right now;
-//   - GET /v3/power-breakdown/latest  -> share of carbon-free and renewable
-//     power in that same consumption.
+// This is the only file that talks to the outside world.
+//
+// IMPORTANT — which endpoint a free key may call. The free "Home Assistant"
+// (free tier) access serves ONE endpoint, for the single zone attached to the
+// key:
+//   - GET /v3/home-assistant -> carbon intensity (gCO2eq/kWh) + share of the
+//     consumption coming from fossil fuels (%).
+// The "full" endpoints (/v3/carbon-intensity/latest, /v3/power-breakdown/latest)
+// belong to the paid plans and answer 401 to a free key — which is exactly the
+// "Invalid API token" a correctly configured free key used to get here.
+//
+// So the carbon intensity and the carbon-free share are read from
+// /v3/home-assistant (works on every plan), and the renewable share stays on
+// /v3/power-breakdown/latest, tried once and then left alone when the plan
+// refuses it (see src/devices/gridCarbon.js).
 //
 // Authentication is a single `auth-token` header. Node 20+ ships `fetch`
 // natively, so no HTTP dependency is needed.
@@ -15,7 +25,9 @@ import { createLogger } from '@gladysassistant/integration-sdk';
 
 const logger = createLogger({ name: 'electricity-maps' });
 
-const API_BASE_URL = 'https://api.electricitymap.org/v3';
+// Current API domain, the one the Electricity Maps clients use today
+// (api.electricitymap.org is the historical alias of the same service).
+const API_BASE_URL = 'https://api.electricitymaps.com/v3';
 const REQUEST_TIMEOUT_MS = 15_000;
 
 /**
@@ -31,25 +43,38 @@ export class ElectricityMapsError extends Error {
 }
 
 /**
- * Latest carbon intensity of the zone.
+ * Latest grid status of the zone, from the endpoint every plan can call.
+ * `fossilFuelPercentage` is turned into its complement: the carbon-free share
+ * (renewables + nuclear) is the value the integration publishes, and it is the
+ * same quantity as the `fossilFreePercentage` of the power breakdown.
  * @param {{ api_token: string, zone: string }} config
- * @returns {Promise<{ carbonIntensity: number, datetime: string|null, isEstimated: boolean }>}
+ * @returns {Promise<{ carbonIntensity: number|null, fossilFreePercentage: number|null }>}
  */
-export async function fetchCarbonIntensity({ api_token: apiToken, zone }) {
-  const body = await request('/carbon-intensity/latest', { apiToken, zone });
+export async function fetchGridStatus({ api_token: apiToken, zone }) {
+  const body = await request('/home-assistant', { apiToken, zone });
+
+  // The endpoint answers 200 with `status: 'no-data'` when the zone has no
+  // measurement for the current hour: that is not an HTTP error, but there is
+  // nothing to publish either.
+  if (body.status && body.status !== 'ok') {
+    throw new ElectricityMapsError(`No data available for zone "${zone}" right now`, 204);
+  }
+
+  const data = body.data ?? {};
+  const fossilFuelPercentage = toNumber(data.fossilFuelPercentage);
 
   return {
-    carbonIntensity: toNumber(body.carbonIntensity),
-    datetime: body.datetime ?? null,
-    isEstimated: body.isEstimated === true,
+    carbonIntensity: toNumber(data.carbonIntensity),
+    fossilFreePercentage: fossilFuelPercentage === null ? null : round1(100 - fossilFuelPercentage),
   };
 }
 
 /**
- * Latest power breakdown of the zone. Only the consumption-side summary is
- * kept: it is what a home actually plugs into.
+ * Latest power breakdown of the zone — PAID PLANS ONLY, a free key gets a 401.
+ * Only the consumption-side summary is kept: it is what a home actually plugs
+ * into.
  * @param {{ api_token: string, zone: string }} config
- * @returns {Promise<{ fossilFreePercentage: number, renewablePercentage: number, datetime: string|null, isEstimated: boolean }>}
+ * @returns {Promise<{ fossilFreePercentage: number|null, renewablePercentage: number|null, datetime: string|null, isEstimated: boolean }>}
  */
 export async function fetchPowerBreakdown({ api_token: apiToken, zone }) {
   const body = await request('/power-breakdown/latest', { apiToken, zone });
@@ -64,7 +89,7 @@ export async function fetchPowerBreakdown({ api_token: apiToken, zone }) {
 
 /**
  * GET one endpoint of the API and return its parsed body.
- * @param {string} path endpoint path, e.g. '/carbon-intensity/latest'
+ * @param {string} path endpoint path, e.g. '/home-assistant'
  * @param {{ apiToken: string, zone: string }} auth
  */
 async function request(path, { apiToken, zone }) {
@@ -102,7 +127,9 @@ async function describeHttpError(response, zone) {
 
   switch (response.status) {
     case 401:
-      return 'Invalid API token (HTTP 401)';
+      // A free key is bound to one zone and to the endpoints of its plan, so a
+      // 401 is not necessarily a typo in the token.
+      return `Invalid API token, or a token that does not cover zone "${zone}" (HTTP 401)`;
     case 403:
       return `Zone "${zone}" is not allowed by your Electricity Maps plan (HTTP 403)`;
     case 404:
@@ -137,4 +164,12 @@ function toNumber(value) {
   }
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : null;
+}
+
+/**
+ * One decimal is enough for a percentage, and it keeps `100 - 27.3` from
+ * landing in the history as 72.69999999999999.
+ */
+function round1(value) {
+  return Math.round(value * 10) / 10;
 }

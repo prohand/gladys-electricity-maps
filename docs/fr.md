@@ -10,14 +10,21 @@ pour faire tourner vos appareils quand l'électricité est la plus propre.
 Un appareil, nommé d'après la zone suivie (par exemple
 `Electricity Maps (FR)`), avec trois capteurs :
 
-| Capteur                  | Unité      | Signification                                                  |
-| ------------------------ | ---------- | -------------------------------------------------------------- |
-| Intensité carbone        | gCO₂eq/kWh | Émissions de l'électricité consommée dans la zone en ce moment |
-| Électricité décarbonée   | %          | Part venant des renouvelables **et** du nucléaire              |
-| Électricité renouvelable | %          | Part venant des renouvelables uniquement                       |
+| Capteur                  | Unité      | Signification                                                  | Offre gratuite |
+| ------------------------ | ---------- | -------------------------------------------------------------- | -------------- |
+| Intensité carbone        | gCO₂eq/kWh | Émissions de l'électricité consommée dans la zone en ce moment | Oui            |
+| Électricité décarbonée   | %          | Part venant des renouvelables **et** du nucléaire              | Oui            |
+| Électricité renouvelable | %          | Part venant des renouvelables uniquement                       | Non            |
 
 Les trois conservent leur historique : ils s'affichent en graphique sur votre
 tableau de bord.
+
+La clé gratuite **Home Assistant** donne accès à un seul point d'entrée de
+l'API, celui qui sert l'intensité carbone et la part fossile (donc la part
+décarbonée, son complément). La part renouvelable vient d'un autre point
+d'entrée, réservé aux offres payantes : l'intégration l'essaie une fois, et si
+votre offre la refuse, le capteur reste simplement vide — les deux autres
+continuent normalement.
 
 ## Obtenir une clé API
 
@@ -36,7 +43,7 @@ Gladys.
    gratuite ne couvre que cette zone-là, et il faut l'indiquer à Gladys — il
    nomme et identifie l'appareil avant le premier appel à l'API. Les
    identifiants ressemblent à `FR`, `DE`, `ES`, `GB` ou `US-CAL-CISO` ; la
-   liste complète est servie par <https://api.electricitymap.org/v3/zones>.
+   liste complète est servie par <https://api.electricitymaps.com/v3/zones>.
 
 ## Configuration
 
@@ -79,19 +86,21 @@ Gladys.
 
 ## Dépannage
 
-| Message                           | Que faire                                                            |
-| --------------------------------- | -------------------------------------------------------------------- |
-| `Invalid API token (HTTP 401)`    | Recopiez le token depuis le portail ; il est stocké en secret        |
-| `Zone ... not allowed (HTTP 403)` | Votre offre ne couvre pas cette zone — utilisez votre zone d'origine |
-| `Unknown zone (HTTP 404)`         | Vérifiez l'identifiant dans la liste des zones                       |
-| `quota exceeded (HTTP 429)`       | Augmentez l'intervalle, ou attendez la remise à zéro du quota        |
-| `Electricity Maps unreachable`    | Problème réseau ou DNS sur l'hôte Gladys                             |
+| Message                            | Que faire                                                            |
+| ---------------------------------- | -------------------------------------------------------------------- |
+| `Invalid API token ... (HTTP 401)` | Token mal recopié, **ou** zone différente de celle de votre clé      |
+| `Zone ... not allowed (HTTP 403)`  | Votre offre ne couvre pas cette zone — utilisez votre zone d'origine |
+| `Unknown zone (HTTP 404)`          | Vérifiez l'identifiant dans la liste des zones                       |
+| `quota exceeded (HTTP 429)`        | Augmentez l'intervalle, ou attendez la remise à zéro du quota        |
+| `Electricity Maps unreachable`     | Problème réseau ou DNS sur l'hôte Gladys                             |
 
 L'intégration journalise tout ce qu'elle fait : consultez les logs de
 l'intégration depuis l'interface Gladys (ou `docker logs` sur l'hôte) avec
 `LOG_LEVEL=debug` pour le détail complet.
 
-Certaines zones ne publient pas de répartition de la production à toutes les
-heures. Dans ce cas l'intensité carbone est quand même publiée et les deux
-pourcentages sont simplement ignorés pour ce tour, au lieu d'être écrits comme
-un `0` trompeur.
+Certaines zones ne publient pas de données à toutes les heures. Dans ce cas la
+valeur manquante est simplement ignorée pour ce tour, au lieu d'être écrite
+comme un `0` trompeur.
+
+L'offre gratuite est limitée à **une zone** et à **50 requêtes par heure** :
+avec l'intervalle par défaut (900 s), l'intégration en consomme 4 par heure.

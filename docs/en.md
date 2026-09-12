@@ -10,13 +10,19 @@ electricity is cleanest.
 One device, named after the zone you follow (for example
 `Electricity Maps (FR)`), with three sensors:
 
-| Sensor                  | Unit       | Meaning                                                     |
-| ----------------------- | ---------- | ----------------------------------------------------------- |
-| Carbon intensity        | gCO₂eq/kWh | Emissions of the electricity consumed in the zone right now |
-| Carbon-free electricity | %          | Share coming from renewables **and** nuclear                |
-| Renewable electricity   | %          | Share coming from renewables only                           |
+| Sensor                  | Unit       | Meaning                                                     | Free plan |
+| ----------------------- | ---------- | ----------------------------------------------------------- | --------- |
+| Carbon intensity        | gCO₂eq/kWh | Emissions of the electricity consumed in the zone right now | Yes       |
+| Carbon-free electricity | %          | Share coming from renewables **and** nuclear                | Yes       |
+| Renewable electricity   | %          | Share coming from renewables only                           | No        |
 
 All three keep their history, so they show up as charts on your dashboard.
+
+The free **Home Assistant** key opens a single API endpoint: the one serving
+the carbon intensity and the fossil share (hence the carbon-free share, its
+complement). The renewable share comes from another endpoint, reserved to the
+paid plans: the integration tries it once, and if your plan refuses it the
+sensor simply stays empty — the two others keep working.
 
 ## Get an API key
 
@@ -34,7 +40,7 @@ personal home automation, and it works exactly the same for Gladys.
    covers that single zone, and Gladys has to be told which one it is — it
    names and identifies the device before the first API call. Zone
    identifiers look like `FR`, `DE`, `ES`, `GB` or `US-CAL-CISO`; the full
-   list is served by <https://api.electricitymap.org/v3/zones>.
+   list is served by <https://api.electricitymaps.com/v3/zones>.
 
 ## Configuration
 
@@ -75,18 +81,21 @@ Gladys.
 
 ## Troubleshooting
 
-| Message                           | What to do                                                    |
-| --------------------------------- | ------------------------------------------------------------- |
-| `Invalid API token (HTTP 401)`    | Re-copy the token from the portal; it is stored as a secret   |
-| `Zone ... not allowed (HTTP 403)` | Your plan does not cover this zone — use your home zone       |
-| `Unknown zone (HTTP 404)`         | Check the identifier against the list of zones                |
-| `quota exceeded (HTTP 429)`       | Increase the refresh interval, or wait for the quota to reset |
-| `Electricity Maps unreachable`    | Network or DNS problem on the Gladys host                     |
+| Message                            | What to do                                                         |
+| ---------------------------------- | ------------------------------------------------------------------ |
+| `Invalid API token ... (HTTP 401)` | Token mis-copied, **or** a zone different from the one on your key |
+| `Zone ... not allowed (HTTP 403)`  | Your plan does not cover this zone — use your home zone            |
+| `Unknown zone (HTTP 404)`          | Check the identifier against the list of zones                     |
+| `quota exceeded (HTTP 429)`        | Increase the refresh interval, or wait for the quota to reset      |
+| `Electricity Maps unreachable`     | Network or DNS problem on the Gladys host                          |
 
 The integration logs everything it does: check the integration logs from the
 Gladys UI (or `docker logs` on the host) with `LOG_LEVEL=debug` for the full
 detail.
 
-Some zones do not publish a power breakdown at every hour. When that happens
-the carbon intensity is still published and the two percentages are simply
-skipped for that round, instead of being written as a bogus `0`.
+Some zones do not publish data at every hour. When that happens the missing
+value is simply skipped for that round, instead of being written as a bogus
+`0`.
+
+The free plan is limited to **one zone** and **50 requests per hour**: at the
+default interval (900 s) the integration uses 4 of them per hour.

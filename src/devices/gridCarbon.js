@@ -11,6 +11,11 @@
 //   - carbon intensity, in gCO2eq/kWh;
 //   - carbon-free share (renewables + nuclear), in %;
 //   - renewable share, in %.
+//
+// The first two come from the endpoint every plan serves; the renewable share
+// needs the power breakdown, which the free "Home Assistant" access refuses
+// (401). It is therefore tried once per token+zone and then dropped, so a free
+// key does not burn a request per poll on an endpoint it may not call.
 // -----------------------------------------------------------------------------
 
 import {
@@ -19,7 +24,7 @@ import {
   DEVICE_FEATURE_TYPES,
   DEVICE_FEATURE_UNITS,
 } from '@gladysassistant/integration-sdk';
-import { fetchCarbonIntensity, fetchPowerBreakdown } from '../electricityMaps.js';
+import { fetchGridStatus, fetchPowerBreakdown } from '../electricityMaps.js';
 
 const DEVICE_TYPE = 'grid-carbon';
 
@@ -102,7 +107,7 @@ export const gridCarbon = {
   actions: {
     async test_connection(gladys, { config }) {
       logger.info('Action test_connection -> live request to Electricity Maps');
-      const { carbonIntensity } = await fetchCarbonIntensity(config);
+      const { carbonIntensity } = await fetchGridStatus(config);
       return {
         en: `Connected: ${carbonIntensity} gCO₂eq/kWh in zone ${config.zone} right now.`,
         fr: `Connexion OK : ${carbonIntensity} gCO₂eq/kWh dans la zone ${config.zone} actuellement.`,
@@ -115,48 +120,84 @@ export const gridCarbon = {
     logger.info(`Polling Electricity Maps for zone ${config.zone}...`);
 
     // ------------------------------------------------------------------ //
-    // DO THE WORK: read the two endpoints.
-    // They are independent: some plans or zones serve the carbon intensity
-    // but not the power breakdown, so one failure must not lose the other.
+    // DO THE WORK: read the grid status, plus the power breakdown as long as
+    // the plan serves it. They are independent: one failure must not lose the
+    // other, hence `allSettled`.
     // ------------------------------------------------------------------ //
-    const [intensity, breakdown] = await Promise.allSettled([
-      fetchCarbonIntensity(config),
-      fetchPowerBreakdown(config),
-    ]);
+    const reads = [fetchGridStatus(config)];
+    if (isPowerBreakdownAllowed(config)) {
+      reads.push(fetchPowerBreakdown(config));
+    }
+    const [status, breakdown] = await Promise.allSettled(reads);
 
     const states = [];
 
-    if (intensity.status === 'fulfilled') {
-      const { carbonIntensity, isEstimated } = intensity.value;
-      logger.info(
-        `Carbon intensity: ${carbonIntensity} gCO₂eq/kWh${isEstimated ? ' (estimated)' : ''}`,
-      );
+    if (status.status === 'fulfilled') {
+      const { carbonIntensity, fossilFreePercentage } = status.value;
+      logger.info(`Carbon intensity: ${carbonIntensity} gCO₂eq/kWh`);
+      logger.info(`Carbon-free: ${fossilFreePercentage}%`);
       pushState(states, ids.feature(FEATURE.CARBON_INTENSITY), carbonIntensity);
+      pushState(states, ids.feature(FEATURE.CARBON_FREE), fossilFreePercentage);
     } else {
-      logger.error('Carbon intensity read failed', intensity.reason);
+      logger.error('Grid status read failed', status.reason);
     }
 
-    if (breakdown.status === 'fulfilled') {
+    if (breakdown?.status === 'fulfilled') {
       const { fossilFreePercentage, renewablePercentage } = breakdown.value;
-      logger.info(`Carbon-free: ${fossilFreePercentage}% / renewable: ${renewablePercentage}%`);
-      pushState(states, ids.feature(FEATURE.CARBON_FREE), fossilFreePercentage);
+      logger.info(`Renewable: ${renewablePercentage}%`);
       pushState(states, ids.feature(FEATURE.RENEWABLE), renewablePercentage);
-    } else {
-      logger.error('Power breakdown read failed', breakdown.reason);
+      if (status.status !== 'fulfilled') {
+        // The grid status is down but the breakdown carries the same share.
+        pushState(states, ids.feature(FEATURE.CARBON_FREE), fossilFreePercentage);
+      }
+    } else if (breakdown) {
+      rememberPowerBreakdownFailure(config, breakdown.reason);
     }
 
     if (states.length === 0) {
       // Nothing readable at all: propagate so the caller can report the
       // integration as disconnected instead of pretending everything is fine.
-      throw (
-        intensity.reason ?? breakdown.reason ?? new Error('No data returned by Electricity Maps')
-      );
+      throw status.reason ?? breakdown?.reason ?? new Error('No data returned by Electricity Maps');
     }
 
     // Publish every value in a single request (batch, up to 100).
     await gladys.publishStates(states);
   },
 };
+
+// Plans that refuse the power breakdown (the free "Home Assistant" access is
+// one of them) answer 401/403 to every call: remember it and stop asking, so a
+// free key spends one request per poll instead of two. The decision is tied to
+// the token+zone pair, so changing either gives the new plan a fresh try.
+let powerBreakdownPlan = { key: null, allowed: true };
+
+function planKey({ api_token: apiToken, zone }) {
+  return `${zone}\u0000${apiToken}`;
+}
+
+function isPowerBreakdownAllowed(config) {
+  const key = planKey(config);
+  if (powerBreakdownPlan.key !== key) {
+    powerBreakdownPlan = { key, allowed: true };
+  }
+  return powerBreakdownPlan.allowed;
+}
+
+/**
+ * A breakdown read failed: give up on that endpoint when the plan is the
+ * reason (401/403), keep retrying on anything else (network, quota, 5xx).
+ */
+function rememberPowerBreakdownFailure(config, reason) {
+  if (reason?.status === 401 || reason?.status === 403) {
+    powerBreakdownPlan = { key: planKey(config), allowed: false };
+    logger.info(
+      'Your Electricity Maps plan does not serve the power breakdown: the renewable share ' +
+        'stays empty, the carbon intensity and the carbon-free share keep working.',
+    );
+    return;
+  }
+  logger.error('Power breakdown read failed', reason);
+}
 
 /**
  * Queue a state, skipping the values the API did not provide: publishing a
