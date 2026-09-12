@@ -67,6 +67,8 @@ rather than rewriting the history of the previous one.
 │  ├─ electricityMaps.js             # Electricity Maps API driver (the only fetch)
 │  └─ config.js                      # config defaults, normalization, clamping
 ├─ docs/en.md, docs/fr.md            # user documentation, re-hosted by Gladys
+├─ assets/cover.html                 # source of the catalog cover (see below)
+├─ cover.jpg                         # catalog cover, 800×534 px
 ├─ gladys-assistant-integration.json # manifest (name, config schema, image…)
 ├─ Dockerfile                        # Node 24 Alpine, read-only rootfs ready
 └─ .github/workflows/                # CI, multi-arch build, UI-driven release
@@ -129,7 +131,11 @@ public and carry the GitHub topic `gladys-assistant-integration`.
 - API errors are translated into actionable messages (bad token, zone not
   allowed, unknown zone, quota exceeded) and the token never appears in a log
   line or an error message.
-- Replace `cover.png` with your own 800×534 px image (≤150 KB) if you fork this.
+- The catalog cover is rendered from [`assets/cover.html`](assets/cover.html),
+  so it can be edited like a web page instead of in an image editor. Re-render
+  it with a headless Chromium at 800×534 and save it as `cover.jpg` (the store
+  accepts PNG or JPEG, 800×534 px, 150 KB max — a PNG of this gradient weighs
+  more than that, hence the JPEG).
 
 ## License
 

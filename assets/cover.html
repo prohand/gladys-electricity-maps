@@ -1,0 +1,278 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      :root {
+        --green: #3ddc84;
+        --green-soft: #8ef0b6;
+        --ink: #eaf4ef;
+        --muted: #93a9b8;
+      }
+
+      html,
+      body {
+        width: 800px;
+        height: 534px;
+      }
+
+      body {
+        font-family: 'Liberation Sans', 'DejaVu Sans', sans-serif;
+        background: #07121c;
+        color: var(--ink);
+        overflow: hidden;
+        position: relative;
+      }
+
+      /* --- background ------------------------------------------------------- */
+      .bg {
+        position: absolute;
+        inset: 0;
+        background:
+          radial-gradient(900px 520px at 12% -10%, rgba(61, 220, 132, 0.28), transparent 62%),
+          radial-gradient(700px 480px at 96% 8%, rgba(45, 130, 220, 0.22), transparent 60%),
+          linear-gradient(160deg, #0c2033 0%, #081826 45%, #060f18 100%);
+      }
+      .grid {
+        position: absolute;
+        inset: 0;
+        background-image:
+          linear-gradient(rgba(255, 255, 255, 0.045) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(255, 255, 255, 0.045) 1px, transparent 1px);
+        background-size: 40px 40px;
+        mask-image: linear-gradient(
+          180deg,
+          rgba(0, 0, 0, 0.9),
+          rgba(0, 0, 0, 0.15) 62%,
+          transparent
+        );
+        -webkit-mask-image: linear-gradient(
+          180deg,
+          rgba(0, 0, 0, 0.9),
+          rgba(0, 0, 0, 0.15) 62%,
+          transparent
+        );
+      }
+
+      /* --- layout ----------------------------------------------------------- */
+      .content {
+        position: absolute;
+        inset: 0;
+        padding: 46px 52px 0 52px;
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+      }
+
+      .badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 9px;
+        padding: 7px 15px 7px 12px;
+        border: 1px solid rgba(61, 220, 132, 0.38);
+        border-radius: 999px;
+        background: rgba(61, 220, 132, 0.09);
+        font-size: 12.5px;
+        font-weight: bold;
+        letter-spacing: 1.6px;
+        text-transform: uppercase;
+        color: var(--green-soft);
+      }
+      .dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--green);
+        box-shadow: 0 0 10px rgba(61, 220, 132, 0.95);
+      }
+
+      h1 {
+        margin-top: 26px;
+        font-size: 63px;
+        line-height: 1.02;
+        font-weight: bold;
+        letter-spacing: -1.6px;
+        color: #ffffff;
+      }
+      h1 .accent {
+        color: var(--green);
+      }
+
+      .subtitle {
+        margin-top: 17px;
+        font-size: 20px;
+        line-height: 1.45;
+        color: var(--muted);
+        max-width: 430px;
+      }
+
+      /* --- the live reading card -------------------------------------------- */
+      .reading {
+        margin-top: 4px;
+        padding: 20px 24px 18px 24px;
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        border-radius: 18px;
+        background: rgba(255, 255, 255, 0.055);
+        text-align: right;
+        min-width: 214px;
+      }
+      .reading .zone {
+        font-size: 12.5px;
+        font-weight: bold;
+        letter-spacing: 2.2px;
+        color: var(--muted);
+        text-transform: uppercase;
+      }
+      .reading .value {
+        margin-top: 8px;
+        font-size: 60px;
+        font-weight: bold;
+        line-height: 1;
+        color: var(--green);
+        letter-spacing: -2px;
+      }
+      .reading .unit {
+        margin-top: 7px;
+        font-size: 15px;
+        color: var(--ink);
+        opacity: 0.72;
+      }
+      .reading .unit sub {
+        font-size: 10px;
+      }
+
+      /* --- stats ------------------------------------------------------------ */
+      .stats {
+        position: absolute;
+        left: 52px;
+        bottom: 128px;
+        display: flex;
+        gap: 40px;
+      }
+      .stat .k {
+        font-size: 30px;
+        font-weight: bold;
+        color: #ffffff;
+        letter-spacing: -0.6px;
+      }
+      .stat .l {
+        margin-top: 5px;
+        font-size: 13px;
+        letter-spacing: 0.5px;
+        color: var(--muted);
+      }
+      .stat .k .pct {
+        font-size: 19px;
+        opacity: 0.75;
+        margin-left: 1px;
+      }
+
+      /* --- chart ------------------------------------------------------------ */
+      svg.chart {
+        position: absolute;
+        left: 0;
+        bottom: 0;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="bg"></div>
+    <div class="grid"></div>
+
+    <svg class="chart" width="800" height="168" viewBox="0 0 800 168">
+      <defs>
+        <linearGradient id="fill" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#3ddc84" stop-opacity="0.62" />
+          <stop offset="55%" stop-color="#3ddc84" stop-opacity="0.24" />
+          <stop offset="100%" stop-color="#3ddc84" stop-opacity="0" />
+        </linearGradient>
+        <linearGradient id="stroke" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stop-color="#8ef0b6" />
+          <stop offset="62%" stop-color="#3ddc84" />
+          <stop offset="100%" stop-color="#2bb7ea" />
+        </linearGradient>
+      </defs>
+      <path id="area" fill="url(#fill)" />
+      <path
+        id="line"
+        fill="none"
+        stroke="url(#stroke)"
+        stroke-width="3.2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      />
+    </svg>
+
+    <div class="content">
+      <div>
+        <div class="badge"><span class="dot"></span>Gladys Assistant integration</div>
+        <h1>Electricity<br /><span class="accent">Maps</span></h1>
+        <div class="subtitle">
+          The carbon intensity of your electricity grid, live in your home automation.
+        </div>
+      </div>
+
+      <div class="reading">
+        <div class="zone">Zone FR · now</div>
+        <div class="value">57</div>
+        <div class="unit">gCO<sub>2</sub>eq / kWh</div>
+      </div>
+    </div>
+
+    <div class="stats">
+      <div class="stat">
+        <div class="k">92<span class="pct">%</span></div>
+        <div class="l">carbon-free</div>
+      </div>
+      <div class="stat">
+        <div class="k">28<span class="pct">%</span></div>
+        <div class="l">renewable</div>
+      </div>
+      <div class="stat">
+        <div class="k">15<span class="pct">min</span></div>
+        <div class="l">auto refresh</div>
+      </div>
+    </div>
+
+    <script>
+      // A day of carbon intensity: low at night (wind + nuclear), peaks at 8am and 7pm.
+      const samples = [
+        62, 58, 54, 51, 49, 52, 63, 78, 86, 79, 68, 60, 55, 51, 48, 50, 57, 69, 84, 91, 82, 71, 63,
+        57,
+      ];
+
+      const W = 800,
+        H = 168;
+      const topY = 34,
+        bottomY = H - 10;
+      const min = 40,
+        max = 100;
+
+      const pts = samples.map((v, i) => [
+        (i / (samples.length - 1)) * W,
+        bottomY - ((v - min) / (max - min)) * (bottomY - topY),
+      ]);
+
+      // Catmull-Rom -> cubic bezier, so the curve reads like a real chart line.
+      let d = `M ${pts[0][0].toFixed(2)} ${pts[0][1].toFixed(2)}`;
+      for (let i = 0; i < pts.length - 1; i++) {
+        const p0 = pts[i - 1] || pts[i];
+        const p1 = pts[i];
+        const p2 = pts[i + 1];
+        const p3 = pts[i + 2] || p2;
+        const c1 = [p1[0] + (p2[0] - p0[0]) / 6, p1[1] + (p2[1] - p0[1]) / 6];
+        const c2 = [p2[0] - (p3[0] - p1[0]) / 6, p2[1] - (p3[1] - p1[1]) / 6];
+        d += ` C ${c1[0].toFixed(2)} ${c1[1].toFixed(2)}, ${c2[0].toFixed(2)} ${c2[1].toFixed(2)}, ${p2[0].toFixed(2)} ${p2[1].toFixed(2)}`;
+      }
+
+      document.getElementById('line').setAttribute('d', d);
+      document.getElementById('area').setAttribute('d', `${d} L ${W} ${H} L 0 ${H} Z`);
+    </script>
+  </body>
+</html>

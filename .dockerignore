@@ -8,3 +8,7 @@ data
 *.log
 .DS_Store
 README.md
+assets
+cover.jpg
+docs
+test
