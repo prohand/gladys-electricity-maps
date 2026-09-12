@@ -14,14 +14,19 @@ and the SDK
 One device per zone (`Electricity Maps (FR)`, `Electricity Maps (DE)`…) with
 three read-only, history-keeping sensors:
 
-| Feature                 | Unit       | API source                        |
-| ----------------------- | ---------- | --------------------------------- |
-| Carbon intensity        | gCO₂eq/kWh | `GET /v3/carbon-intensity/latest` |
-| Carbon-free electricity | %          | `GET /v3/power-breakdown/latest`  |
-| Renewable electricity   | %          | `GET /v3/power-breakdown/latest`  |
+| Feature                 | Unit       | API source                       | Free plan |
+| ----------------------- | ---------- | -------------------------------- | --------- |
+| Carbon intensity        | gCO₂eq/kWh | `GET /v3/home-assistant`         | Yes       |
+| Carbon-free electricity | %          | `GET /v3/home-assistant`         | Yes       |
+| Renewable electricity   | %          | `GET /v3/power-breakdown/latest` | No        |
 
-Both endpoints are read on every poll. They are independent: if one is
-unavailable for your plan or your zone, the other is still published.
+`/v3/home-assistant` is the only endpoint the free "Home Assistant" access
+serves; it returns the carbon intensity and the fossil share, whose complement
+is the carbon-free share. The full endpoints (`/v3/carbon-intensity/latest`,
+`/v3/power-breakdown/latest`) belong to the paid plans and answer **401** to a
+free key — which is why the renewable share is probed once per token+zone and
+then dropped when the plan refuses it, instead of burning a request on every
+poll. The two reads are independent: one failing never loses the other.
 
 ## Polling
 

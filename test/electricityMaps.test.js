@@ -1,7 +1,7 @@
 import { test, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  fetchCarbonIntensity,
+  fetchGridStatus,
   fetchPowerBreakdown,
   ElectricityMapsError,
 } from '../src/electricityMaps.js';
@@ -13,35 +13,67 @@ afterEach(() => {
   globalThis.fetch = realFetch;
 });
 
-test('fetchCarbonIntensity returns the parsed intensity', async () => {
+/** Body served by GET /v3/home-assistant. */
+function homeAssistantBody({ carbonIntensity = 57, fossilFuelPercentage = 8 } = {}) {
+  return {
+    status: 'ok',
+    countryCode: 'FR',
+    data: { carbonIntensity, fossilFuelPercentage },
+    units: { carbonIntensity: 'gCO2eq/kWh' },
+  };
+}
+
+test('fetchGridStatus returns the intensity and the carbon-free share', async () => {
   globalThis.fetch = async () => ({
     ok: true,
-    json: async () => ({
-      zone: 'FR',
-      carbonIntensity: 57,
-      datetime: '2026-09-12T10:00:00.000Z',
-      isEstimated: false,
-    }),
+    json: async () => homeAssistantBody({ carbonIntensity: 57, fossilFuelPercentage: 8 }),
   });
 
-  const result = await fetchCarbonIntensity(CONFIG);
+  const result = await fetchGridStatus(CONFIG);
   assert.equal(result.carbonIntensity, 57);
-  assert.equal(result.datetime, '2026-09-12T10:00:00.000Z');
-  assert.equal(result.isEstimated, false);
+  assert.equal(
+    result.fossilFreePercentage,
+    92,
+    'carbon-free is the complement of the fossil share',
+  );
 });
 
-test('fetchCarbonIntensity sends the auth-token header and the zone', async () => {
+test('fetchGridStatus calls the endpoint a free key is allowed to call', async () => {
+  // The free "Home Assistant" access only serves /v3/home-assistant: calling
+  // /v3/carbon-intensity/latest with a free key answers 401.
   let calledUrl;
   let calledOptions;
   globalThis.fetch = async (url, options) => {
     calledUrl = url;
     calledOptions = options;
-    return { ok: true, json: async () => ({ carbonIntensity: 100 }) };
+    return { ok: true, json: async () => homeAssistantBody() };
   };
 
-  await fetchCarbonIntensity({ api_token: 'secret', zone: 'US-CAL-CISO' });
-  assert.match(calledUrl, /\/carbon-intensity\/latest\?zone=US-CAL-CISO$/);
+  await fetchGridStatus({ api_token: 'secret', zone: 'US-CAL-CISO' });
+  assert.match(
+    calledUrl,
+    /^https:\/\/api\.electricitymaps\.com\/v3\/home-assistant\?zone=US-CAL-CISO$/,
+  );
   assert.equal(calledOptions.headers['auth-token'], 'secret');
+});
+
+test('fetchGridStatus rounds the carbon-free share to one decimal', async () => {
+  globalThis.fetch = async () => ({
+    ok: true,
+    json: async () => homeAssistantBody({ fossilFuelPercentage: 27.3 }),
+  });
+
+  const result = await fetchGridStatus(CONFIG);
+  assert.equal(result.fossilFreePercentage, 72.7);
+});
+
+test('fetchGridStatus reports a zone without data for the current hour', async () => {
+  globalThis.fetch = async () => ({ ok: true, json: async () => ({ status: 'no-data' }) });
+
+  await assert.rejects(
+    () => fetchGridStatus({ ...CONFIG, zone: 'XX' }),
+    /No data available for zone "XX"/,
+  );
 });
 
 test('fetchPowerBreakdown returns the carbon-free and renewable shares', async () => {
@@ -59,9 +91,13 @@ test('fetchPowerBreakdown returns the carbon-free and renewable shares', async (
 test('a missing value comes back as null instead of NaN', async () => {
   globalThis.fetch = async () => ({ ok: true, json: async () => ({}) });
 
-  const result = await fetchPowerBreakdown(CONFIG);
-  assert.equal(result.fossilFreePercentage, null);
-  assert.equal(result.renewablePercentage, null);
+  const breakdown = await fetchPowerBreakdown(CONFIG);
+  assert.equal(breakdown.fossilFreePercentage, null);
+  assert.equal(breakdown.renewablePercentage, null);
+
+  const status = await fetchGridStatus(CONFIG);
+  assert.equal(status.carbonIntensity, null);
+  assert.equal(status.fossilFreePercentage, null);
 });
 
 test('an empty token fails fast, without any HTTP call', async () => {
@@ -71,42 +107,44 @@ test('an empty token fails fast, without any HTTP call', async () => {
     return { ok: true, json: async () => ({}) };
   };
 
-  await assert.rejects(() => fetchCarbonIntensity({ api_token: '', zone: 'FR' }), {
+  await assert.rejects(() => fetchGridStatus({ api_token: '', zone: 'FR' }), {
     name: 'ElectricityMapsError',
     status: 401,
   });
   assert.equal(called, false, 'no request is sent without a token');
 });
 
-test('an invalid token is reported as such', async () => {
+test('an invalid token is reported as such, and names the zone', async () => {
   globalThis.fetch = async () => ({
     ok: false,
     status: 401,
     json: async () => ({ error: 'Invalid auth-token' }),
   });
 
-  await assert.rejects(() => fetchCarbonIntensity(CONFIG), /Invalid API token/);
+  // A free key only covers the zone it was created for: a 401 is as often a
+  // wrong zone as a wrong token, and the message has to say so.
+  await assert.rejects(() => fetchGridStatus(CONFIG), /Invalid API token.*zone "FR".*401/);
 });
 
 test('an unknown zone names the zone in the error', async () => {
   globalThis.fetch = async () => ({ ok: false, status: 404, json: async () => ({}) });
 
-  await assert.rejects(() => fetchCarbonIntensity({ ...CONFIG, zone: 'XX' }), /Unknown zone "XX"/);
+  await assert.rejects(() => fetchGridStatus({ ...CONFIG, zone: 'XX' }), /Unknown zone "XX"/);
 });
 
 test('an exceeded quota is reported as such', async () => {
   globalThis.fetch = async () => ({ ok: false, status: 429, json: async () => ({}) });
 
-  await assert.rejects(() => fetchCarbonIntensity(CONFIG), { status: 429, message: /quota/ });
+  await assert.rejects(() => fetchGridStatus(CONFIG), { status: 429, message: /quota/ });
 });
 
 test('a network failure is wrapped without leaking the token', async () => {
   globalThis.fetch = async () => {
-    throw new Error('getaddrinfo ENOTFOUND api.electricitymap.org');
+    throw new Error('getaddrinfo ENOTFOUND api.electricitymaps.com');
   };
 
   await assert.rejects(
-    () => fetchCarbonIntensity(CONFIG),
+    () => fetchGridStatus(CONFIG),
     (err) => {
       assert.ok(err instanceof ElectricityMapsError);
       assert.equal(err.status, 0);

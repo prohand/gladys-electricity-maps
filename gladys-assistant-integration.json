@@ -18,8 +18,8 @@
       "type": "section",
       "label": { "en": "Getting started", "fr": "Pour commencer" },
       "description": {
-        "en": "Electricity Maps publishes the carbon intensity of electricity grids worldwide. Create a free account on the portal, then in Settings > Access activate the \"Home Assistant\" plan: it is the free, personal and non-commercial one (Trial and Academic are the other tabs). Create your key in Settings > API keys, paste it below, then set the zone you want to follow (for example FR, DE or US-CAL-CISO).",
-        "fr": "Electricity Maps publie l'intensité carbone des réseaux électriques dans le monde. Créez un compte gratuit sur le portail, puis dans Settings > Access activez l'offre \"Home Assistant\" : c'est la gratuite, personnelle et non commerciale (Trial et Academic sont les autres onglets). Créez votre clé dans Settings > API keys, collez-la ci-dessous, puis indiquez la zone à suivre (par exemple FR, DE ou US-CAL-CISO)."
+        "en": "Electricity Maps publishes the carbon intensity of electricity grids worldwide. Create a free account on the portal, then in Settings > Access activate the \"Home Assistant\" plan: it is the free, personal and non-commercial one (Trial and Academic are the other tabs). Create your key in Settings > API keys, paste it below, then set the zone you want to follow (for example FR, DE or US-CAL-CISO). A free key covers ONE zone: use the zone shown next to it, or every request answers 401. The free plan serves the carbon intensity and the carbon-free share; the renewable share needs a paid plan and stays empty otherwise.",
+        "fr": "Electricity Maps publie l'intensité carbone des réseaux électriques dans le monde. Créez un compte gratuit sur le portail, puis dans Settings > Access activez l'offre \"Home Assistant\" : c'est la gratuite, personnelle et non commerciale (Trial et Academic sont les autres onglets). Créez votre clé dans Settings > API keys, collez-la ci-dessous, puis indiquez la zone à suivre (par exemple FR, DE ou US-CAL-CISO). Une clé gratuite ne couvre qu'UNE zone : indiquez celle affichée à côté d'elle, sinon chaque requête répond 401. L'offre gratuite fournit l'intensité carbone et la part décarbonée ; la part renouvelable demande une offre payante et reste sinon vide."
       },
       "links": [
         {
@@ -30,7 +30,7 @@
           }
         },
         {
-          "url": "https://api.electricitymap.org/v3/zones",
+          "url": "https://api.electricitymaps.com/v3/zones",
           "label": { "en": "List of available zones", "fr": "Liste des zones disponibles" }
         }
       ]

@@ -16,20 +16,33 @@ afterEach(() => {
   globalThis.fetch = realFetch;
 });
 
-/** Answer both endpoints of a poll with the given bodies. */
-function stubApi({ intensity, breakdown }) {
+/**
+ * Answer both endpoints of a poll.
+ * `status` is the body of /v3/home-assistant (or an Error to fail it),
+ * `breakdown` the body of /v3/power-breakdown/latest (Error, or a status code
+ * to answer, e.g. 401 for a plan that does not serve it).
+ */
+function stubApi({ status, breakdown }) {
   globalThis.fetch = async (url) => {
-    if (String(url).includes('/carbon-intensity/')) {
-      if (intensity instanceof Error) {
-        return { ok: false, status: 500, json: async () => ({ message: intensity.message }) };
+    if (String(url).includes('/home-assistant')) {
+      if (status instanceof Error) {
+        return { ok: false, status: 500, json: async () => ({ message: status.message }) };
       }
-      return { ok: true, json: async () => intensity };
+      return { ok: true, json: async () => status };
+    }
+    if (typeof breakdown === 'number') {
+      return { ok: false, status: breakdown, json: async () => ({}) };
     }
     if (breakdown instanceof Error) {
       return { ok: false, status: 500, json: async () => ({ message: breakdown.message }) };
     }
     return { ok: true, json: async () => breakdown };
   };
+}
+
+/** Body of /v3/home-assistant for the given values. */
+function gridStatus({ carbonIntensity = 57, fossilFuelPercentage = 8 } = {}) {
+  return { status: 'ok', data: { carbonIntensity, fossilFuelPercentage } };
 }
 
 test('every blueprint exposes the required shape', () => {
@@ -127,7 +140,7 @@ test('onPoll publishes the three values in a single batch', async () => {
   const gladys = createFakeGladys();
   const [bp] = DEVICE_BLUEPRINTS;
   stubApi({
-    intensity: { carbonIntensity: 57 },
+    status: gridStatus({ carbonIntensity: 57, fossilFuelPercentage: 8 }),
     breakdown: { fossilFreePercentage: 92, renewablePercentage: 28 },
   });
 
@@ -142,22 +155,55 @@ test('onPoll publishes the three values in a single batch', async () => {
   }
 });
 
-test('onPoll still publishes the intensity when the power breakdown fails', async () => {
+test('onPoll still publishes intensity and carbon-free when the breakdown fails', async () => {
   const gladys = createFakeGladys();
   const [bp] = DEVICE_BLUEPRINTS;
-  stubApi({ intensity: { carbonIntensity: 57 }, breakdown: new Error('breakdown unavailable') });
+  stubApi({ status: gridStatus(), breakdown: new Error('breakdown unavailable') });
 
   await bp.onPoll(gladys, config);
 
-  assert.equal(gladys.published.length, 1, 'one endpoint down must not lose the other');
-  assert.equal(gladys.published[0].state, 57);
+  assert.deepEqual(
+    gladys.published.map((p) => p.state),
+    [57, 92],
+    'one endpoint down must not lose the other',
+  );
+});
+
+test('a plan that refuses the power breakdown is asked only once', async () => {
+  // The free "Home Assistant" access answers 401 on /power-breakdown/latest:
+  // the poll must keep working on the two other values, and stop spending a
+  // request per poll on an endpoint the plan will never serve.
+  const gladys = createFakeGladys();
+  const [bp] = DEVICE_BLUEPRINTS;
+  // Own token: the "plan refused" memory is keyed by token+zone, so this test
+  // cannot leak its decision into the others.
+  const freeConfig = normalizeConfig({ api_token: 'free-tier-token', zone: 'FR' });
+
+  stubApi({ status: gridStatus(), breakdown: 401 });
+  const stubbedFetch = globalThis.fetch;
+  const calls = [];
+  globalThis.fetch = async (url, options) => {
+    calls.push(String(url));
+    return stubbedFetch(url, options);
+  };
+
+  await bp.onPoll(gladys, freeConfig);
+  await bp.onPoll(gladys, freeConfig);
+
+  assert.equal(calls.filter((url) => url.includes('/power-breakdown/')).length, 1);
+  assert.equal(calls.filter((url) => url.includes('/home-assistant')).length, 2);
+  assert.deepEqual(
+    gladys.published.map((p) => p.state),
+    [57, 92, 57, 92],
+    'the values the plan does serve keep being published',
+  );
 });
 
 test('onPoll skips the values the API did not provide', async () => {
   const gladys = createFakeGladys();
   const [bp] = DEVICE_BLUEPRINTS;
   stubApi({
-    intensity: { carbonIntensity: 57 },
+    status: gridStatus(),
     breakdown: { fossilFreePercentage: 92, renewablePercentage: null },
   });
 
@@ -173,7 +219,7 @@ test('onPoll skips the values the API did not provide', async () => {
 test('onPoll throws when nothing at all could be read', async () => {
   const gladys = createFakeGladys();
   const [bp] = DEVICE_BLUEPRINTS;
-  stubApi({ intensity: new Error('down'), breakdown: new Error('down') });
+  stubApi({ status: new Error('down'), breakdown: new Error('down') });
 
   await assert.rejects(() => bp.onPoll(gladys, config));
   assert.equal(gladys.published.length, 0);
@@ -182,7 +228,7 @@ test('onPoll throws when nothing at all could be read', async () => {
 test('the test_connection action returns a multi-language message', async () => {
   const gladys = createFakeGladys();
   const [bp] = DEVICE_BLUEPRINTS;
-  stubApi({ intensity: { carbonIntensity: 57 }, breakdown: {} });
+  stubApi({ status: gridStatus(), breakdown: {} });
 
   const message = await bp.actions.test_connection(gladys, { fields: {}, config });
   assert.match(message.en, /57/);
