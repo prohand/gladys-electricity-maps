@@ -151,3 +151,37 @@ test('a tick landing on a still-running refresh is dropped', async () => {
     poller.stop();
   });
 });
+
+test('refreshNow refreshes without disturbing the schedule', async () => {
+  await withFakeTimers(async () => {
+    let calls = 0;
+    const poller = createPoller(async () => {
+      calls += 1;
+    });
+
+    poller.sync(900);
+    await flush();
+    // The user pasted their token: the interval did not change, but waiting
+    // 900 s in front of empty sensors is not acceptable.
+    await poller.refreshNow();
+    assert.equal(calls, 2);
+    assert.equal(poller.intervalSeconds, 900, 'the schedule is untouched');
+
+    await advance(900);
+    assert.equal(calls, 3);
+
+    poller.stop();
+  });
+});
+
+test('sync reports whether it restarted the loop', async () => {
+  await withFakeTimers(async () => {
+    const poller = createPoller(async () => {});
+
+    assert.equal(poller.sync(900), true, 'first start');
+    assert.equal(poller.sync(900), false, 'same interval: nothing to do');
+    assert.equal(poller.sync(300), true, 'new interval');
+
+    poller.stop();
+  });
+});

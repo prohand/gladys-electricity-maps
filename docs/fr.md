@@ -69,7 +69,11 @@ choisissez. Electricity Maps met ses données à jour environ **une fois par
 heure**, et les offres gratuites ont un quota mensuel de requêtes : interroger
 plus souvent n'apporte rien. La valeur est bornée entre **300 s** (5 minutes)
 et **86 400 s** (1 jour). Une modification s'applique immédiatement, sans
-redémarrage, et déclenche un rafraîchissement dans la foulée.
+redémarrage, et déclenche un rafraîchissement dans la foulée. Changer la clé
+API ou la zone provoque également une lecture immédiate.
+
+Quand vous ajoutez l'appareil depuis l'onglet **Découverte**, ses capteurs sont
+remplis tout de suite : pas besoin d'attendre le prochain rafraîchissement.
 
 Gladys sait piloter lui-même l'interrogation d'un appareil, mais uniquement
 avec une liste figée d'intervalles plafonnée à une minute : beaucoup trop

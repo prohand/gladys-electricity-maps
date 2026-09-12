@@ -46,16 +46,29 @@ export function createPoller(refresh) {
      * actually changes (first start, or the user edited the interval): the
      * caller may invoke this on every reconnection, where re-reading the API
      * would only waste quota, and it is then a no-op.
+     *
+     * @returns {boolean} true when the loop was (re)started, so the caller
+     *   knows a refresh is already on its way and does not add a second one.
      */
     sync(seconds) {
       if (timer !== null && seconds === intervalSeconds) {
-        return;
+        return false;
       }
       this.stop();
       intervalSeconds = seconds;
       timer = setInterval(tick, seconds * 1000);
       logger.info(`Refreshing every ${seconds} s`);
       tick();
+      return true;
+    },
+
+    /**
+     * Refresh now, without touching the schedule: used when something other
+     * than the interval changed (a new token, a new zone) and waiting for the
+     * next tick would leave the user in front of stale or empty values.
+     */
+    async refreshNow() {
+      await tick();
     },
 
     stop() {

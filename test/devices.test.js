@@ -56,6 +56,11 @@ test('every blueprint exposes the required shape', () => {
     assert.equal(typeof bp.deviceExternalId, 'function', 'deviceExternalId must be a function');
     assert.equal(typeof bp.buildDevice, 'function', 'buildDevice must be a function');
     assert.equal(typeof bp.onPoll, 'function', 'onPoll must be a function');
+    assert.equal(
+      typeof bp.onDeviceCreated,
+      'function',
+      'onDeviceCreated must be a function: a brand new device must not stay empty',
+    );
   }
 });
 
@@ -268,4 +273,108 @@ test('the test_connection action returns a multi-language message', async () => 
   assert.match(message.en, /57/);
   assert.match(message.fr, /57/);
   assert.match(message.fr, /FR/);
+});
+
+test('onDeviceCreated publishes right away, without waiting for the next tick', async () => {
+  // The user adds the device from the discovery list: the sensors must show a
+  // value immediately, not after a full poll_frequency (900 s by default).
+  const gladys = createFakeGladys();
+  const [bp] = DEVICE_BLUEPRINTS;
+  const freshConfig = normalizeConfig({ api_token: 'created-token', zone: 'FR' });
+  stubApi({ status: gridStatus(), breakdown: { renewablePercentage: 30 } });
+
+  await bp.onDeviceCreated(gladys, freshConfig);
+
+  assert.deepEqual(
+    gladys.published.map((p) => p.state),
+    [57, 92, 30],
+    'the three sensors are filled in as soon as the device exists',
+  );
+});
+
+test('onDeviceCreated replays the last poll instead of spending an API request', async () => {
+  const gladys = createFakeGladys();
+  const [bp] = DEVICE_BLUEPRINTS;
+  const cachedConfig = normalizeConfig({ api_token: 'cached-token', zone: 'FR' });
+  let apiCalls = 0;
+  const stub = (opts) => {
+    stubApi(opts);
+    const inner = globalThis.fetch;
+    globalThis.fetch = async (url) => {
+      apiCalls += 1;
+      return inner(url);
+    };
+  };
+
+  // A tick ran before the user created the device: Gladys dropped those states.
+  stub({ status: gridStatus(), breakdown: { renewablePercentage: 30 } });
+  await bp.onPoll(gladys, cachedConfig);
+  const callsAfterPoll = apiCalls;
+  gladys.published.length = 0;
+
+  await bp.onDeviceCreated(gladys, cachedConfig);
+
+  assert.equal(apiCalls, callsAfterPoll, 'a fresh cache must not cost another request');
+  assert.deepEqual(
+    gladys.published.map((p) => p.state),
+    [57, 92, 30],
+    'the values read a moment ago are republished to the new device',
+  );
+});
+
+test('onDeviceCreated ignores a cache read for another zone', async () => {
+  const gladys = createFakeGladys();
+  const [bp] = DEVICE_BLUEPRINTS;
+  const frConfig = normalizeConfig({ api_token: 'zone-token', zone: 'FR' });
+  const deConfig = normalizeConfig({ api_token: 'zone-token', zone: 'DE' });
+
+  stubApi({ status: gridStatus(), breakdown: { renewablePercentage: 30 } });
+  await bp.onPoll(gladys, frConfig);
+  gladys.published.length = 0;
+
+  stubApi({ status: gridStatus({ carbonIntensity: 400 }), breakdown: { renewablePercentage: 12 } });
+  await bp.onDeviceCreated(gladys, deConfig);
+
+  assert.deepEqual(
+    gladys.published.map((p) => p.state),
+    [400, 92, 12],
+    'the German device must not inherit the French values',
+  );
+  for (const { featureExternalId } of gladys.published) {
+    assert.match(featureExternalId, /:DE:/, 'the states target the DE device');
+  }
+});
+
+test('onDeviceCreated reads live again once the cache is older than one interval', async () => {
+  const gladys = createFakeGladys();
+  const [bp] = DEVICE_BLUEPRINTS;
+  const staleConfig = normalizeConfig({
+    api_token: 'stale-token',
+    zone: 'FR',
+    poll_frequency: 300,
+  });
+
+  stubApi({ status: gridStatus(), breakdown: { renewablePercentage: 30 } });
+  await bp.onPoll(gladys, staleConfig);
+  gladys.published.length = 0;
+
+  // The device is created long after that read: the loop would have refreshed
+  // it by now, so the cached batch is not what the user should see.
+  const realNow = Date.now;
+  Date.now = () => realNow() + 301 * 1000;
+  try {
+    stubApi({
+      status: gridStatus({ carbonIntensity: 12 }),
+      breakdown: { renewablePercentage: 80 },
+    });
+    await bp.onDeviceCreated(gladys, staleConfig);
+  } finally {
+    Date.now = realNow;
+  }
+
+  assert.deepEqual(
+    gladys.published.map((p) => p.state),
+    [12, 92, 80],
+    'a stale cache is refreshed instead of being replayed',
+  );
 });

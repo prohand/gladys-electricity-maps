@@ -61,7 +61,11 @@ devices are published **without** `poll_frequency`.
   clamped again in `src/config.js` so an out-of-range value can never hammer
   the API);
 - changing it restarts the loop and refreshes right away, without a restart of
-  the container;
+  the container; changing the token or the zone also refreshes right away, even
+  though the interval itself did not move;
+- creating the device from the discovery list fills its sensors immediately
+  (`onDeviceCreated`), replaying the last batch read when it is younger than one
+  interval, so the user never faces empty features for a whole `poll_frequency`;
 - a tick landing while the previous refresh still runs is dropped, and a failed
   refresh is logged without stopping the loop;
 - nothing is requested while Gladys is unreachable or while the token/zone are
