@@ -21,6 +21,17 @@ import { createFakeGladys } from './helpers/fakeGladys.js';
 
 const config = normalizeConfig({ api_token: 'test-token', zone: 'FR' });
 
+// publishDevices probes the power breakdown before building the payload (it
+// decides whether the renewable sensor can hold a value): answer it here, so
+// no test in this file ever reaches the real API. A plan that serves it keeps
+// the three sensors, which is what these tests describe.
+globalThis.fetch = async (url) => {
+  if (String(url).includes('/power-breakdown/')) {
+    return { ok: true, json: async () => ({ fossilFreePercentage: 92, renewablePercentage: 28 }) };
+  }
+  return { ok: true, json: async () => ({ status: 'ok', data: {} }) };
+};
+
 /** The error the core answers on a category it does not know. */
 function unknownCategoryError() {
   const err = new Error('devices[0].features[0].category: unknown category');

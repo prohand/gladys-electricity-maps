@@ -4,6 +4,7 @@ import { DEVICE_FEATURE_UNITS } from '@gladysassistant/integration-sdk';
 import {
   DEVICE_BLUEPRINTS,
   buildDiscoveredDevices,
+  capabilitiesSignature,
   findBlueprintByDevice,
 } from '../src/devices/index.js';
 import {
@@ -377,4 +378,118 @@ test('onDeviceCreated reads live again once the cache is older than one interval
     [12, 92, 80],
     'a stale cache is refreshed instead of being replayed',
   );
+});
+
+test('a plan that refuses the breakdown gets a device without the renewable sensor', async () => {
+  // The free "Home Assistant" access answers 401 there: a sensor no endpoint
+  // can ever fill must not be advertised, or the user faces a "no recent
+  // value" tile forever.
+  const gladys = createFakeGladys();
+  const [bp] = DEVICE_BLUEPRINTS;
+  const freeConfig = normalizeConfig({ api_token: 'probe-refused-token', zone: 'FR' });
+  stubApi({ status: gridStatus(), breakdown: 401 });
+
+  await bp.probeCapabilities(gladys, freeConfig);
+
+  const [device] = buildDiscoveredDevices(gladys, freeConfig);
+  assert.deepEqual(
+    device.features.map((f) => f.type),
+    [GRID_CARBON_TYPES.CARBON_INTENSITY, GRID_CARBON_TYPES.CARBON_FREE_PERCENTAGE],
+    'only the two sensors the plan actually serves',
+  );
+  assert.equal(bp.capabilitiesSignature(freeConfig), 'no-renewable');
+});
+
+test('a plan that serves the breakdown keeps the three sensors', async () => {
+  const gladys = createFakeGladys();
+  const [bp] = DEVICE_BLUEPRINTS;
+  const paidConfig = normalizeConfig({ api_token: 'probe-allowed-token', zone: 'FR' });
+  stubApi({
+    status: gridStatus(),
+    breakdown: { fossilFreePercentage: 92, renewablePercentage: 28 },
+  });
+
+  await bp.probeCapabilities(gladys, paidConfig);
+
+  const [device] = buildDiscoveredDevices(gladys, paidConfig);
+  assert.equal(device.features.length, 3);
+  assert.equal(device.features[2].type, GRID_CARBON_TYPES.RENEWABLE_PERCENTAGE);
+  assert.equal(bp.capabilitiesSignature(paidConfig), 'renewable');
+});
+
+test('the probe hands its reading over to the poll instead of paying twice', async () => {
+  const gladys = createFakeGladys();
+  const [bp] = DEVICE_BLUEPRINTS;
+  const reuseConfig = normalizeConfig({ api_token: 'probe-reuse-token', zone: 'FR' });
+  stubApi({
+    status: gridStatus(),
+    breakdown: { fossilFreePercentage: 92, renewablePercentage: 28 },
+  });
+  const stubbedFetch = globalThis.fetch;
+  const calls = [];
+  globalThis.fetch = async (url, options) => {
+    calls.push(String(url));
+    return stubbedFetch(url, options);
+  };
+
+  await bp.probeCapabilities(gladys, reuseConfig);
+  await bp.onPoll(gladys, reuseConfig);
+
+  assert.equal(
+    calls.filter((url) => url.includes('/power-breakdown/')).length,
+    1,
+    'the probe request is the poll request',
+  );
+  assert.deepEqual(
+    gladys.published.map((p) => p.state),
+    [57, 92, 28],
+    'the probed renewable share is published, not thrown away',
+  );
+});
+
+test('a probe that fails on anything but the plan keeps the renewable sensor', async () => {
+  // A network error says nothing about what the plan serves: publish the
+  // sensor and let a later poll settle it.
+  const gladys = createFakeGladys();
+  const [bp] = DEVICE_BLUEPRINTS;
+  const flakyConfig = normalizeConfig({ api_token: 'probe-flaky-token', zone: 'FR' });
+  stubApi({ status: gridStatus(), breakdown: new Error('network down') });
+
+  await bp.probeCapabilities(gladys, flakyConfig);
+
+  const [device] = buildDiscoveredDevices(gladys, flakyConfig);
+  assert.equal(device.features.length, 3, 'undecided means still advertised');
+  assert.equal(bp.capabilitiesSignature(flakyConfig), 'renewable');
+});
+
+test('the probe is skipped when nothing is configured yet', async () => {
+  const gladys = createFakeGladys();
+  const [bp] = DEVICE_BLUEPRINTS;
+  const empty = normalizeConfig({ api_token: '', zone: 'FR' });
+  let calls = 0;
+  globalThis.fetch = async () => {
+    calls += 1;
+    throw new Error('the probe must not call the API without a token');
+  };
+
+  await bp.probeCapabilities(gladys, empty);
+
+  assert.equal(calls, 0);
+  assert.equal(buildDiscoveredDevices(gladys, empty)[0].features.length, 3);
+});
+
+test('a refusal discovered by a poll changes what the devices advertise', async () => {
+  // The probe could not settle it (network error), so the device went out with
+  // the three sensors; the poll then gets the 401. index.js watches this
+  // signature to re-publish the devices without the renewable sensor.
+  const gladys = createFakeGladys();
+  const [bp] = DEVICE_BLUEPRINTS;
+  const lateConfig = normalizeConfig({ api_token: 'late-refusal-token', zone: 'FR' });
+  assert.equal(capabilitiesSignature(lateConfig), 'grid-carbon=renewable');
+
+  stubApi({ status: gridStatus(), breakdown: 401 });
+  await bp.onPoll(gladys, lateConfig);
+
+  assert.equal(capabilitiesSignature(lateConfig), 'grid-carbon=no-renewable');
+  assert.equal(buildDiscoveredDevices(gladys, lateConfig)[0].features.length, 2);
 });

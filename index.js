@@ -18,7 +18,12 @@
 import { GladysIntegration, logger } from '@gladysassistant/integration-sdk';
 import { normalizeConfig, isConfigured } from './src/config.js';
 import { createPoller } from './src/poller.js';
-import { DEVICE_BLUEPRINTS, publishDevices, findBlueprintByDevice } from './src/devices/index.js';
+import {
+  DEVICE_BLUEPRINTS,
+  capabilitiesSignature,
+  publishDevices,
+  findBlueprintByDevice,
+} from './src/devices/index.js';
 
 const gladys = new GladysIntegration();
 
@@ -97,12 +102,23 @@ async function refreshAllDevices() {
     logger.warn('Refresh skipped: not connected to Gladys');
     return;
   }
+  // What the devices advertise can depend on what the Electricity Maps plan
+  // actually serves, and a poll is where a refusal shows up when the probe run
+  // before publishing could not settle it (a network error, a token pasted
+  // before the integration was reachable).
+  const advertisedBefore = capabilitiesSignature(config);
   for (const blueprint of DEVICE_BLUEPRINTS) {
     try {
       await blueprint.onPoll(gladys, config);
     } catch (err) {
       logger.error(`Refresh of ${blueprint.key} failed`, err);
     }
+  }
+  if (capabilitiesSignature(config) !== advertisedBefore) {
+    logger.info('The refresh changed what the devices can publish -> re-publishing them');
+    await publishDevices(gladys, config).catch((err) => {
+      logger.error('Re-publishing the devices failed', err);
+    });
   }
 }
 
