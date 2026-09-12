@@ -8,7 +8,7 @@ electricity is cleanest.
 ## What you get
 
 One device, named after the zone you follow (for example
-`Electricity Maps (FR)`), with three sensors:
+`Electricity Maps (FR)`), with two or three sensors depending on your plan:
 
 | Sensor                  | Unit       | Meaning                                                     | Free plan |
 | ----------------------- | ---------- | ----------------------------------------------------------- | --------- |
@@ -16,7 +16,7 @@ One device, named after the zone you follow (for example
 | Carbon-free electricity | %          | Share coming from renewables **and** nuclear                | Yes       |
 | Renewable electricity   | %          | Share coming from renewables only                           | No        |
 
-All three keep their history, so they show up as charts on your dashboard.
+They all keep their history, so they show up as charts on your dashboard.
 
 They belong to the Gladys **Grid carbon sensor** category: that is what gives
 them their name, icon and unit in the UI. If your Gladys version does not know
@@ -27,8 +27,15 @@ real labels.
 The free **Home Assistant** key opens a single API endpoint: the one serving
 the carbon intensity and the fossil share (hence the carbon-free share, its
 complement). The renewable share comes from another endpoint, reserved to the
-paid plans: the integration tries it once, and if your plan refuses it the
-sensor simply stays empty — the two others keep working.
+paid plans: the integration asks it **once**, before publishing the device. If
+your plan refuses it, the "Renewable electricity" sensor is **not published at
+all** — rather than shown permanently empty — and the two others keep working.
+Move to a plan that serves the power breakdown and it appears on the next
+restart of the integration.
+
+If you had already added the device with its three sensors, Gladys keeps the
+ones that exist: delete the device and add it again from the **Discovery**
+screen to get rid of the empty sensor.
 
 ## Get an API key
 

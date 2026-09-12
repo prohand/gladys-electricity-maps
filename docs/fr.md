@@ -8,7 +8,7 @@ pour faire tourner vos appareils quand l'électricité est la plus propre.
 ## Ce que vous obtenez
 
 Un appareil, nommé d'après la zone suivie (par exemple
-`Electricity Maps (FR)`), avec trois capteurs :
+`Electricity Maps (FR)`), avec deux ou trois capteurs selon votre offre :
 
 | Capteur                  | Unité      | Signification                                                  | Offre gratuite |
 | ------------------------ | ---------- | -------------------------------------------------------------- | -------------- |
@@ -16,7 +16,7 @@ Un appareil, nommé d'après la zone suivie (par exemple
 | Électricité décarbonée   | %          | Part venant des renouvelables **et** du nucléaire              | Oui            |
 | Électricité renouvelable | %          | Part venant des renouvelables uniquement                       | Non            |
 
-Les trois conservent leur historique : ils s'affichent en graphique sur votre
+Ils conservent tous leur historique : ils s'affichent en graphique sur votre
 tableau de bord.
 
 Ils appartiennent à la catégorie **Capteur carbone du réseau** de Gladys : c'est
@@ -28,9 +28,16 @@ les mêmes valeurs. Mettez Gladys à jour pour récupérer les vrais libellés.
 La clé gratuite **Home Assistant** donne accès à un seul point d'entrée de
 l'API, celui qui sert l'intensité carbone et la part fossile (donc la part
 décarbonée, son complément). La part renouvelable vient d'un autre point
-d'entrée, réservé aux offres payantes : l'intégration l'essaie une fois, et si
-votre offre la refuse, le capteur reste simplement vide — les deux autres
-continuent normalement.
+d'entrée, réservé aux offres payantes : l'intégration l'interroge **une fois**,
+avant de publier l'appareil. Si votre offre la refuse, le capteur
+« Électricité renouvelable » n'est **pas publié du tout** — plutôt qu'affiché
+vide en permanence — et les deux autres continuent normalement. Passez à une
+offre qui sert le détail de production et il apparaît au redémarrage suivant de
+l'intégration.
+
+Si vous aviez déjà ajouté l'appareil avec ses trois capteurs, Gladys garde ceux
+qui existent : supprimez l'appareil et rajoutez-le depuis l'écran
+**Découverte** pour ne plus voir le capteur vide.
 
 ## Obtenir une clé API
 

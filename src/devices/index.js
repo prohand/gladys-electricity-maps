@@ -9,6 +9,11 @@
 //     refresh loop (src/poller.js) at the interval chosen by the user
 //   - actions (optional)              : manifest action handlers, keyed by the
 //     action `key` declared in gladys-assistant-integration.json
+//   - probeCapabilities (optional)    : awaited before the discovery payload is
+//     built, for a blueprint whose features depend on what the third party
+//     actually serves
+//   - capabilitiesSignature (optional): comparable string of what the device
+//     advertises, so a change discovered later triggers a re-publication
 //
 // Electricity Maps exposes one grid per zone, so the catalog holds a single
 // device type. Add a file here and register it below to publish more.
@@ -44,6 +49,7 @@ export function buildDiscoveredDevices(gladys, config) {
  * @param {ReturnType<typeof import('../config.js').normalizeConfig>} config
  */
 export async function publishDevices(gladys, config) {
+  await probeCapabilities(gladys, config);
   try {
     await gladys.publishDiscoveredDevices(buildDiscoveredDevices(gladys, config));
   } catch (err) {
@@ -58,6 +64,39 @@ export async function publishDevices(gladys, config) {
     unknownFeaturesFallback = true;
     await gladys.publishDiscoveredDevices(buildDiscoveredDevices(gladys, config));
   }
+}
+
+/**
+ * Let every blueprint find out what the third party serves before its
+ * discovery payload is built: a feature nothing can ever fill is better left
+ * unpublished than shown empty forever. A failing probe must not keep the
+ * devices from being published: the blueprint then advertises what it assumes
+ * it can read, and a later poll settles the question (see
+ * `capabilitiesSignature`).
+ */
+async function probeCapabilities(gladys, config) {
+  for (const bp of DEVICE_BLUEPRINTS) {
+    if (!bp.probeCapabilities) {
+      continue;
+    }
+    try {
+      await bp.probeCapabilities(gladys, config);
+    } catch (err) {
+      logger.error(`Capability probe of ${bp.key} failed`, err);
+    }
+  }
+}
+
+/**
+ * What the whole catalog advertises right now, as a comparable string. The
+ * refresh loop compares it around each tick: a poll that discovers the plan
+ * refuses an endpoint changes it, and the devices are re-published without the
+ * feature that endpoint was feeding.
+ */
+export function capabilitiesSignature(config) {
+  return DEVICE_BLUEPRINTS.map(
+    (bp) => `${bp.key}=${bp.capabilitiesSignature?.(config) ?? ''}`,
+  ).join('|');
 }
 
 /**

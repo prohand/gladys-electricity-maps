@@ -12,7 +12,7 @@ and the SDK
 ## What it publishes
 
 One device per zone (`Electricity Maps (FR)`, `Electricity Maps (DE)`…) with
-three read-only, history-keeping sensors:
+two or three read-only, history-keeping sensors:
 
 | Feature                 | Type                     | Unit       | API source                       | Free plan |
 | ----------------------- | ------------------------ | ---------- | -------------------------------- | --------- |
@@ -20,7 +20,17 @@ three read-only, history-keeping sensors:
 | Carbon-free electricity | `carbon-free-percentage` | %          | `GET /v3/home-assistant`         | Yes       |
 | Renewable electricity   | `renewable-percentage`   | %          | `GET /v3/power-breakdown/latest` | No        |
 
-The three are published in the core's **`grid-carbon-sensor`** category (see
+The renewable sensor is only published when the plan actually serves the power
+breakdown: `probeCapabilities` asks that endpoint once per token+zone, before
+the discovery payload is built, and a 401/403 takes the feature out of it. A
+sensor no endpoint can fill would otherwise sit on the dashboard reading "no
+recent value" forever. The probe payload is handed over to the poll that
+follows (`takeProbedBreakdown`), so the check costs no extra request, and a
+refusal that only a poll discovers (the probe hit a network error) changes
+`capabilitiesSignature`, which makes `refreshAllDevices` re-publish the devices
+without the feature.
+
+They are published in the core's **`grid-carbon-sensor`** category (see
 `src/features.js`): that is what gives them their Gladys name, icon, unit and
 chart grouping. A Gladys that does not know the category yet rejects the whole
 discovery payload with `400 unknown category`, so the integration republishes
@@ -42,8 +52,9 @@ serves; it returns the carbon intensity and the fossil share, whose complement
 is the carbon-free share. The full endpoints (`/v3/carbon-intensity/latest`,
 `/v3/power-breakdown/latest`) belong to the paid plans and answer **401** to a
 free key — which is why the renewable share is probed once per token+zone and
-then dropped when the plan refuses it, instead of burning a request on every
-poll. The two reads are independent: one failing never loses the other.
+then dropped, feature included, when the plan refuses it, instead of burning a
+request on every poll. The two reads are independent: one failing never loses
+the other.
 
 ## Polling
 

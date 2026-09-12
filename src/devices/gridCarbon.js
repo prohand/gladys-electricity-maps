@@ -7,15 +7,18 @@
 // timer therefore lives in the integration (src/poller.js), which calls
 // `onPoll` at the interval chosen by the user.
 //
-// Three values, all for the electricity actually CONSUMED in the zone:
+// Up to three values, all for the electricity actually CONSUMED in the zone:
 //   - carbon intensity, in gCO2eq/kWh;
 //   - carbon-free share (renewables + nuclear), in %;
 //   - renewable share, in %.
 //
 // The first two come from the endpoint every plan serves; the renewable share
 // needs the power breakdown, which the free "Home Assistant" access refuses
-// (401). It is therefore tried once per token+zone and then dropped, so a free
-// key does not burn a request per poll on an endpoint it may not call.
+// (401). That endpoint is therefore PROBED once per token+zone, before the
+// discovery payload is built (see `probeCapabilities`): a plan that refuses it
+// gets a device with two sensors, instead of a third one that would read "no
+// recent value" forever. The probe payload is reused by the poll that follows,
+// so the check costs no extra request.
 //
 // The states published before the user actually creates the device are lost
 // (Gladys has nowhere to store them yet), so the last batch is kept in memory
@@ -24,6 +27,7 @@
 // -----------------------------------------------------------------------------
 
 import { createLogger, DEVICE_FEATURE_UNITS } from '@gladysassistant/integration-sdk';
+import { isConfigured } from '../config.js';
 import {
   GRAM_CO2EQ_PER_KILOWATT_HOUR,
   GRID_CARBON_SENSOR,
@@ -61,52 +65,91 @@ export const gridCarbon = {
 
   buildDevice(gladys, config) {
     const ids = gladys.externalIds(DEVICE_TYPE, config.zone);
+    const features = [
+      {
+        // The unit is declared, not written in the name: Gladys renders it
+        // next to the value (57 gCO₂eq/kWh).
+        name: 'Carbon intensity',
+        external_id: ids.feature(FEATURE.CARBON_INTENSITY),
+        category: GRID_CARBON_SENSOR,
+        type: GRID_CARBON_TYPES.CARBON_INTENSITY,
+        unit: GRAM_CO2EQ_PER_KILOWATT_HOUR,
+        min: 0,
+        max: MAX_CARBON_INTENSITY,
+        read_only: true, // sensor: nothing to command
+        has_feedback: false,
+        keep_history: true, // keep history to draw charts
+      },
+      {
+        name: 'Carbon-free electricity',
+        external_id: ids.feature(FEATURE.CARBON_FREE),
+        category: GRID_CARBON_SENSOR,
+        type: GRID_CARBON_TYPES.CARBON_FREE_PERCENTAGE,
+        unit: DEVICE_FEATURE_UNITS.PERCENT,
+        min: 0,
+        max: 100,
+        read_only: true,
+        has_feedback: false,
+        keep_history: true,
+      },
+    ];
+
+    // The renewable share is only advertised while the plan may serve it: a
+    // sensor no endpoint can fill would sit on the dashboard reading "no
+    // recent value" for good.
+    if (isPowerBreakdownAllowed(config)) {
+      features.push({
+        name: 'Renewable electricity',
+        external_id: ids.feature(FEATURE.RENEWABLE),
+        category: GRID_CARBON_SENSOR,
+        type: GRID_CARBON_TYPES.RENEWABLE_PERCENTAGE,
+        unit: DEVICE_FEATURE_UNITS.PERCENT,
+        min: 0,
+        max: 100,
+        read_only: true,
+        has_feedback: false,
+        keep_history: true,
+      });
+    }
+
     return {
       name: `Electricity Maps (${config.zone})`,
       external_id: ids.device,
       // No `poll_frequency` here on purpose: see the header, the refresh is
       // driven by src/poller.js.
-      features: [
-        {
-          // The unit is declared, not written in the name: Gladys renders it
-          // next to the value (57 gCO₂eq/kWh).
-          name: 'Carbon intensity',
-          external_id: ids.feature(FEATURE.CARBON_INTENSITY),
-          category: GRID_CARBON_SENSOR,
-          type: GRID_CARBON_TYPES.CARBON_INTENSITY,
-          unit: GRAM_CO2EQ_PER_KILOWATT_HOUR,
-          min: 0,
-          max: MAX_CARBON_INTENSITY,
-          read_only: true, // sensor: nothing to command
-          has_feedback: false,
-          keep_history: true, // keep history to draw charts
-        },
-        {
-          name: 'Carbon-free electricity',
-          external_id: ids.feature(FEATURE.CARBON_FREE),
-          category: GRID_CARBON_SENSOR,
-          type: GRID_CARBON_TYPES.CARBON_FREE_PERCENTAGE,
-          unit: DEVICE_FEATURE_UNITS.PERCENT,
-          min: 0,
-          max: 100,
-          read_only: true,
-          has_feedback: false,
-          keep_history: true,
-        },
-        {
-          name: 'Renewable electricity',
-          external_id: ids.feature(FEATURE.RENEWABLE),
-          category: GRID_CARBON_SENSOR,
-          type: GRID_CARBON_TYPES.RENEWABLE_PERCENTAGE,
-          unit: DEVICE_FEATURE_UNITS.PERCENT,
-          min: 0,
-          max: 100,
-          read_only: true,
-          has_feedback: false,
-          keep_history: true,
-        },
-      ],
+      features,
     };
+  },
+
+  /**
+   * Find out what the plan serves BEFORE the discovery payload is built, so
+   * `buildDevice` knows whether the renewable sensor can ever hold a value.
+   * One request, and only while the answer is unknown for this token+zone; its
+   * payload is kept for the poll that follows, which therefore does not read
+   * the same endpoint twice.
+   */
+  async probeCapabilities(gladys, config) {
+    if (planFor(config).allowed !== null || !isConfigured(config)) {
+      return;
+    }
+    logger.info('Checking whether your plan serves the power breakdown (renewable share)...');
+    try {
+      const breakdown = await fetchPowerBreakdown(config);
+      rememberPowerBreakdownAllowed(config);
+      rememberProbedBreakdown(config, breakdown);
+    } catch (err) {
+      rememberPowerBreakdownFailure(config, err);
+    }
+  },
+
+  /**
+   * What the device currently advertises, as a comparable string: the refresh
+   * loop re-publishes the devices when it changes, which is how a plan refusal
+   * discovered by a poll (rather than by the probe) still takes the renewable
+   * sensor off the discovery list.
+   */
+  capabilitiesSignature(config) {
+    return isPowerBreakdownAllowed(config) ? 'renewable' : 'no-renewable';
   },
 
   // Manifest actions owned by this device type (see the `actions` field of
@@ -130,13 +173,17 @@ export const gridCarbon = {
     // ------------------------------------------------------------------ //
     // DO THE WORK: read the grid status, plus the power breakdown as long as
     // the plan serves it. They are independent: one failure must not lose the
-    // other, hence `allSettled`.
+    // other, hence `allSettled`. When the capability probe just read the
+    // breakdown, its payload is reused instead of paying for the same request
+    // again seconds later.
     // ------------------------------------------------------------------ //
+    const probed = takeProbedBreakdown(config);
     const reads = [fetchGridStatus(config)];
-    if (isPowerBreakdownAllowed(config)) {
+    if (!probed && isPowerBreakdownAllowed(config)) {
       reads.push(fetchPowerBreakdown(config));
     }
-    const [status, breakdown] = await Promise.allSettled(reads);
+    const [status, polledBreakdown] = await Promise.allSettled(reads);
+    const breakdown = probed ? { status: 'fulfilled', value: probed } : polledBreakdown;
 
     const states = [];
 
@@ -153,6 +200,8 @@ export const gridCarbon = {
     if (breakdown?.status === 'fulfilled') {
       const { fossilFreePercentage, renewablePercentage } = breakdown.value;
       logger.info(`Renewable: ${renewablePercentage}%`);
+      // The plan does serve it: keep the sensor advertised.
+      rememberPowerBreakdownAllowed(config);
       pushState(states, ids.feature(FEATURE.RENEWABLE), renewablePercentage);
       if (status.status !== 'fulfilled') {
         // The grid status is down but the breakdown carries the same share.
@@ -212,22 +261,36 @@ function takeFreshStates(config) {
   return ageSeconds <= config.poll_frequency ? lastStates.states : null;
 }
 
-// Plans that refuse the power breakdown (the free "Home Assistant" access is
-// one of them) answer 401/403 to every call: remember it and stop asking, so a
-// free key spends one request per poll instead of two. The decision is tied to
-// the token+zone pair, so changing either gives the new plan a fresh try.
-let powerBreakdownPlan = { key: null, allowed: true };
+// What the plan does with the power breakdown, for one token+zone pair:
+//   allowed === null  -> not asked yet (the sensor is advertised optimistically)
+//   allowed === true  -> served
+//   allowed === false -> refused (401/403): stop asking, and stop publishing
+//                        the renewable sensor
+// Plans that refuse it (the free "Home Assistant" access is one of them) answer
+// 401/403 to every call, so a free key spends one request per poll instead of
+// two. The decision is tied to the token+zone pair, so changing either gives
+// the new plan a fresh try.
+let powerBreakdownPlan = { key: null, allowed: null };
 
 function planKey({ api_token: apiToken, zone }) {
-  return `${zone}\u0000${apiToken}`;
+  return `${zone} ${apiToken}`;
+}
+
+/** Plan state of this token+zone, reset as soon as either one changed. */
+function planFor(config) {
+  const key = planKey(config);
+  if (powerBreakdownPlan.key !== key) {
+    powerBreakdownPlan = { key, allowed: null };
+  }
+  return powerBreakdownPlan;
 }
 
 function isPowerBreakdownAllowed(config) {
-  const key = planKey(config);
-  if (powerBreakdownPlan.key !== key) {
-    powerBreakdownPlan = { key, allowed: true };
-  }
-  return powerBreakdownPlan.allowed;
+  return planFor(config).allowed !== false;
+}
+
+function rememberPowerBreakdownAllowed(config) {
+  planFor(config).allowed = true;
 }
 
 /**
@@ -236,14 +299,33 @@ function isPowerBreakdownAllowed(config) {
  */
 function rememberPowerBreakdownFailure(config, reason) {
   if (reason?.status === 401 || reason?.status === 403) {
-    powerBreakdownPlan = { key: planKey(config), allowed: false };
+    planFor(config).allowed = false;
     logger.info(
       'Your Electricity Maps plan does not serve the power breakdown: the renewable share ' +
-        'stays empty, the carbon intensity and the carbon-free share keep working.',
+        'sensor is not published, the carbon intensity and the carbon-free share keep working.',
     );
     return;
   }
   logger.error('Power breakdown read failed', reason);
+}
+
+// Breakdown read by `probeCapabilities`, handed over to the poll that follows.
+// One-shot, and only while it is fresh: a value nobody consumed for a while is
+// not what the sensor should show.
+const PROBE_REUSE_MS = 60_000;
+let probedBreakdown = { key: null, at: 0, value: null };
+
+function rememberProbedBreakdown(config, value) {
+  probedBreakdown = { key: planKey(config), at: Date.now(), value };
+}
+
+function takeProbedBreakdown(config) {
+  if (probedBreakdown.value === null || probedBreakdown.key !== planKey(config)) {
+    return null;
+  }
+  const fresh = Date.now() - probedBreakdown.at <= PROBE_REUSE_MS ? probedBreakdown.value : null;
+  probedBreakdown = { key: null, at: 0, value: null };
+  return fresh;
 }
 
 /**
