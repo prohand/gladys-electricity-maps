@@ -52,18 +52,24 @@ test('buildDiscoveredDevices returns one payload per blueprint', () => {
   }
 });
 
-test('the device carries the configured poll_frequency', () => {
+test('the device never declares a poll_frequency', () => {
+  // The core validates `poll_frequency` against a closed list of values, in
+  // milliseconds, capped at one minute; sending our own interval (in seconds)
+  // gets the whole discovery payload rejected with a 400. The refresh is
+  // driven by src/poller.js instead.
   const gladys = createFakeGladys();
-  const [device] = buildDiscoveredDevices(gladys, normalizeConfig({ poll_frequency: 1800 }));
-  assert.equal(device.poll_frequency, 1800, 'Gladys drives the polling from this value');
+  for (const seconds of [300, 900, 3600, 86400]) {
+    const [device] = buildDiscoveredDevices(gladys, normalizeConfig({ poll_frequency: seconds }));
+    assert.equal(device.poll_frequency, undefined);
+    assert.ok(!('poll_frequency' in device), 'the key must not be sent at all');
+  }
 });
 
-test('a changed refresh interval is reflected on the re-published device', () => {
+test('a changed refresh interval keeps the same device', () => {
   const gladys = createFakeGladys();
   const before = buildDiscoveredDevices(gladys, normalizeConfig({ poll_frequency: 900 }))[0];
   const after = buildDiscoveredDevices(gladys, normalizeConfig({ poll_frequency: 3600 }))[0];
   assert.equal(before.external_id, after.external_id, 'the device is upserted, not duplicated');
-  assert.equal(after.poll_frequency, 3600);
 });
 
 test('feature external_ids are unique inside the device', () => {

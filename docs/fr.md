@@ -51,13 +51,17 @@ Gladys.
 
 ### Intervalle de rafraîchissement
 
-C'est Gladys qui pilote l'interrogation : l'intervalle que vous choisissez est
-attaché à l'appareil, et Gladys demande le rafraîchissement à ce rythme.
-Electricity Maps met ses données à jour environ **une fois par heure**, et les
-offres gratuites ont un quota mensuel de requêtes : interroger plus souvent
-n'apporte rien. La valeur est bornée entre **300 s** (5 minutes) et
-**86 400 s** (1 jour), et une modification s'applique immédiatement, sans
-redémarrage.
+L'intégration gère sa propre minuterie et interroge l'API au rythme que vous
+choisissez. Electricity Maps met ses données à jour environ **une fois par
+heure**, et les offres gratuites ont un quota mensuel de requêtes : interroger
+plus souvent n'apporte rien. La valeur est bornée entre **300 s** (5 minutes)
+et **86 400 s** (1 jour). Une modification s'applique immédiatement, sans
+redémarrage, et déclenche un rafraîchissement dans la foulée.
+
+Gladys sait piloter lui-même l'interrogation d'un appareil, mais uniquement
+avec une liste figée d'intervalles plafonnée à une minute : beaucoup trop
+rapide pour une API horaire et à quota. C'est pourquoi les appareils sont
+publiés sans `poll_frequency`.
 
 ### Changer de zone
 

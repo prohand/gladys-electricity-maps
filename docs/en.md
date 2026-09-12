@@ -48,12 +48,16 @@ personal home automation, and it works exactly the same for Gladys.
 
 ### Refresh interval
 
-Gladys owns the polling: the interval you set is attached to the device and
-Gladys asks the integration to refresh at that pace. Electricity Maps updates
-its data roughly **once an hour**, and free plans have a monthly request quota,
-so there is nothing to gain from polling faster. The value is capped between
-**300 s** (5 minutes) and **86 400 s** (1 day), and changing it applies
-immediately — no restart needed.
+The integration runs its own refresh timer at the interval you set. Electricity
+Maps updates its data roughly **once an hour**, and free plans have a monthly
+request quota, so there is nothing to gain from refreshing faster. The value is
+capped between **300 s** (5 minutes) and **86 400 s** (1 day), and changing it
+applies immediately — no restart needed, and the new interval triggers a
+refresh straight away.
+
+Gladys can drive the polling of a device itself, but only at a fixed set of
+intervals capped at one minute: far too fast for a metered, hourly API. That is
+why the devices are published without a `poll_frequency`.
 
 ### Changing zone
 

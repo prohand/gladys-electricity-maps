@@ -19,10 +19,11 @@ export const DEFAULT_CONFIG = {
   api_token: '',
   // Zone identifier, e.g. 'FR', 'DE', 'US-CAL-CISO'. See the /v3/zones endpoint.
   zone: 'FR',
-  // Seconds between two refreshes. Gladys drives the polling: the value is
-  // published on the device as `poll_frequency`, and Gladys calls `onPoll` at
-  // that interval. Electricity Maps refreshes roughly every hour and the free
-  // plan has a monthly request quota, so polling faster buys nothing.
+  // Seconds between two refreshes, honoured by the integration's own loop
+  // (src/poller.js). It is NOT the device `poll_frequency` field: the core only
+  // accepts a closed list of values capped at one minute, while Electricity
+  // Maps refreshes roughly every hour and the free plan has a monthly request
+  // quota, so polling faster buys nothing.
   poll_frequency: 900,
 };
 

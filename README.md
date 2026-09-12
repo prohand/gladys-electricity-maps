@@ -25,17 +25,25 @@ unavailable for your plan or your zone, the other is still published.
 
 ## Polling
 
-Gladys owns the timer. The device declares a **`poll_frequency`** (in seconds)
-in its discovery payload, taken from the user setting _Refresh interval_, and
-Gladys calls `onPoll` at that pace — the integration never runs a `setInterval`
-of its own.
+The integration owns the timer (`src/poller.js`), running at the user setting
+_Refresh interval_ and calling the blueprints' `onPoll`.
+
+Gladys can drive the polling itself, from a **`poll_frequency`** declared on
+the device — but the core validates that field against a closed list of values,
+in **milliseconds**, capped at **one minute** (`1 s, 2 s, 10 s, 15 s, 30 s,
+60 s`); anything else is rejected with `400 invalid poll frequency`. A
+once-an-hour, quota-metered API has no business being read every minute, so the
+devices are published **without** `poll_frequency`.
 
 - default: **900 s**, bounds **300 s – 86 400 s** (manifest `min`/`max`, and
   clamped again in `src/config.js` so an out-of-range value can never hammer
   the API);
-- changing it re-publishes the device (`publishDiscoveredDevices` is an upsert
-  by `external_id`), so the new interval applies immediately, without a
-  restart.
+- changing it restarts the loop and refreshes right away, without a restart of
+  the container;
+- a tick landing while the previous refresh still runs is dropped, and a failed
+  refresh is logged without stopping the loop;
+- nothing is requested while Gladys is unreachable or while the token/zone are
+  missing: the states would be lost anyway.
 
 Electricity Maps refreshes roughly once an hour and free plans carry a monthly
 request quota: polling faster buys nothing.
@@ -71,6 +79,7 @@ rather than rewriting the history of the previous one.
 │  │  ├─ index.js                    #   device registry
 │  │  └─ gridCarbon.js               #   the grid device: features + onPoll
 │  ├─ electricityMaps.js             # Electricity Maps API driver (the only fetch)
+│  ├─ poller.js                      # internal refresh loop (Gladys caps polling at 1 min)
 │  └─ config.js                      # config defaults, normalization, clamping
 ├─ docs/en.md, docs/fr.md            # user documentation, re-hosted by Gladys
 ├─ assets/cover.html                 # source of the catalog cover (see below)

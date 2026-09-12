@@ -5,8 +5,8 @@
 //   - key                             : short identifier (used in logs)
 //   - deviceExternalId(gladys, config): the device external_id (for dispatch)
 //   - buildDevice(gladys, config)     : the discovery payload sent to Gladys
-//   - onPoll(gladys, config)          : periodic read, called by Gladys at the
-//     `poll_frequency` declared in the discovery payload
+//   - onPoll(gladys, config)          : periodic read, called by the internal
+//     refresh loop (src/poller.js) at the interval chosen by the user
 //   - actions (optional)              : manifest action handlers, keyed by the
 //     action `key` declared in gladys-assistant-integration.json
 //

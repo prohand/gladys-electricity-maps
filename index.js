@@ -17,6 +17,7 @@
 
 import { GladysIntegration, logger } from '@gladysassistant/integration-sdk';
 import { normalizeConfig, isConfigured } from './src/config.js';
+import { createPoller } from './src/poller.js';
 import {
   DEVICE_BLUEPRINTS,
   buildDiscoveredDevices,
@@ -27,6 +28,10 @@ const gladys = new GladysIntegration();
 
 // Current configuration (hot-reloaded via onConfigUpdated).
 let config = normalizeConfig();
+
+// Refresh loop owned by the integration (see src/poller.js for why Gladys does
+// not drive it here).
+const poller = createPoller(refreshAllDevices);
 
 const NOT_CONFIGURED_MESSAGE = {
   en: 'Set your Electricity Maps API token and zone in the configuration.',
@@ -39,10 +44,11 @@ gladys.onScanRequest(async () => {
   await gladys.publishDiscoveredDevices(buildDiscoveredDevices(gladys, config));
 });
 
-// --- Polling: Gladys asks to refresh a device --------------------------------
-// The interval comes from the `poll_frequency` declared per device in the
-// discovery payload (user setting "Refresh interval"): Gladys owns the timer,
-// the integration never schedules one itself.
+// --- Polling: refresh a device -----------------------------------------------
+// Devices are published without a `poll_frequency` (the core caps it at one
+// minute, see src/poller.js), so the ticks come from our own loop. The handler
+// stays registered anyway: it costs nothing and answers a refresh Gladys may
+// ask for on its own.
 gladys.onPoll(async (device) => {
   const blueprint = findBlueprintByDevice(gladys, device, config);
   if (!blueprint) {
@@ -52,6 +58,30 @@ gladys.onPoll(async (device) => {
   }
   await blueprint.onPoll(gladys, config);
 });
+
+/**
+ * One tick of the refresh loop: read every device type in turn. A blueprint
+ * failing must not skip the next one, so each is awaited on its own.
+ */
+async function refreshAllDevices() {
+  if (!isConfigured(config)) {
+    logger.warn('Refresh skipped: no API token or zone configured yet');
+    return;
+  }
+  if (!gladys.connected) {
+    // Gladys is unreachable: the states would be lost anyway, so do not spend
+    // an Electricity Maps request on them.
+    logger.warn('Refresh skipped: not connected to Gladys');
+    return;
+  }
+  for (const blueprint of DEVICE_BLUEPRINTS) {
+    try {
+      await blueprint.onPoll(gladys, config);
+    } catch (err) {
+      logger.error(`Refresh of ${blueprint.key} failed`, err);
+    }
+  }
+}
 
 // --- Manifest actions: buttons in the Configuration screen -------------------
 // Each action declared in the `actions` field of the manifest is registered per
@@ -67,11 +97,12 @@ for (const blueprint of DEVICE_BLUEPRINTS) {
 gladys.onConfigUpdated(async (newConfig) => {
   logger.info('onConfigUpdated -> new configuration received');
   config = normalizeConfig(newConfig);
-  // Re-publish the devices: the zone and the refresh interval both live in the
-  // discovery payload. publishDiscoveredDevices is idempotent (upsert by
-  // external_id), so a changed poll_frequency is applied right away.
+  // Re-publish the devices: the zone lives in the discovery payload, and
+  // publishDiscoveredDevices is idempotent (upsert by external_id).
   await gladys.publishDiscoveredDevices(buildDiscoveredDevices(gladys, config));
   await reportConfigurationStatus();
+  // Apply the new refresh interval (and read the new zone/token right away).
+  poller.sync(config.poll_frequency);
 });
 
 // --- Connection lifecycle ----------------------------------------------------
@@ -90,6 +121,10 @@ gladys.on('connected', async () => {
     // screen. Distinct from the container state machine: an integration can be
     // RUNNING and still unable to reach its third-party service.
     await reportConfigurationStatus();
+
+    // 4) Start (or keep) the refresh loop. `sync` is a no-op when the interval
+    // has not changed, so a reconnection never triggers an extra API call.
+    poller.sync(config.poll_frequency);
   } catch (err) {
     logger.error('Post-connection initialization failed', err);
     await gladys
@@ -120,6 +155,7 @@ async function reportConfigurationStatus() {
 // the container (SIGTERM/SIGINT).
 gladys.handleShutdown((signal) => {
   logger.info(`Received ${signal} -> graceful shutdown`);
+  poller.stop();
 });
 
 // --- Startup -----------------------------------------------------------------
