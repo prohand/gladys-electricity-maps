@@ -32,16 +32,17 @@ Gladys.
    Activez-le : ses conditions d'usage gratuit sont un usage personnel, non
    commercial et sans revenu — ce que fait un serveur domotique.
 3. Allez dans **Settings → API keys**, créez votre clé et copiez-la.
-4. Notez votre **zone** : cet accès gratuit donne droit à une zone (votre zone
-   d'origine). Les identifiants ressemblent à `FR`, `DE`, `ES`, `GB` ou
-   `US-CAL-CISO` ; la liste complète est servie par
-   <https://api.electricitymap.org/v3/zones>.
+4. Notez la **zone** affichée à côté de votre clé : une clé Home Assistant
+   gratuite ne couvre que cette zone-là, et il faut l'indiquer à Gladys — il
+   nomme et identifie l'appareil avant le premier appel à l'API. Les
+   identifiants ressemblent à `FR`, `DE`, `ES`, `GB` ou `US-CAL-CISO` ; la
+   liste complète est servie par <https://api.electricitymap.org/v3/zones>.
 
 ## Configuration
 
 1. Ouvrez l'onglet **Configuration** de l'intégration.
 2. Collez la **clé API** créée avec l'accès Home Assistant.
-3. Indiquez la **zone** à suivre (`FR` par défaut).
+3. Indiquez la **zone** à suivre — la même que sur votre clé (`FR` par défaut).
 4. Ajustez si besoin l'**intervalle de rafraîchissement** (900 secondes par
    défaut).
 5. Enregistrez, puis cliquez sur **Tester la connexion** : l'intensité carbone

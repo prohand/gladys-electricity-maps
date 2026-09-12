@@ -51,8 +51,8 @@
       "type": "string",
       "label": { "en": "Zone", "fr": "Zone" },
       "description": {
-        "en": "Identifier of the grid zone to follow, e.g. FR, DE, US-CAL-CISO. Free accounts are limited to their home zone.",
-        "fr": "Identifiant de la zone à suivre, par exemple FR, DE, US-CAL-CISO. Les comptes gratuits sont limités à leur zone d'origine."
+        "en": "Identifier of the grid zone to follow, e.g. FR, DE, US-CAL-CISO. Copy the zone shown next to your key in the portal: a free Home Assistant key only covers that one.",
+        "fr": "Identifiant de la zone à suivre, par exemple FR, DE, US-CAL-CISO. Recopiez la zone affichée à côté de votre clé sur le portail : une clé Home Assistant gratuite ne couvre que celle-là."
       },
       "required": true,
       "default": "FR",

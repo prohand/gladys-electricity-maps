@@ -30,15 +30,17 @@ personal home automation, and it works exactly the same for Gladys.
    use terms are personal, non-commercial and non-revenue-generating use —
    which is what a home automation server does.
 3. Go to **Settings → API keys** and create your key, then copy it.
-4. Note your **zone**: this free access gives you one zone (your home zone).
-   Zone identifiers look like `FR`, `DE`, `ES`, `GB` or `US-CAL-CISO`; the
-   full list is served by <https://api.electricitymap.org/v3/zones>.
+4. Note the **zone** displayed next to your key: a free Home Assistant key
+   covers that single zone, and Gladys has to be told which one it is — it
+   names and identifies the device before the first API call. Zone
+   identifiers look like `FR`, `DE`, `ES`, `GB` or `US-CAL-CISO`; the full
+   list is served by <https://api.electricitymap.org/v3/zones>.
 
 ## Configuration
 
 1. Open the **Configuration** tab of the integration.
 2. Paste the **API key** created with the Home Assistant access.
-3. Set the **zone** to follow (`FR` by default).
+3. Set the **zone** to follow — the same one as on your key (`FR` by default).
 4. Optionally adjust the **refresh interval** (900 seconds by default).
 5. Save, then click **Test the connection**: the current carbon intensity of
    your zone is displayed under the button.
