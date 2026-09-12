@@ -18,20 +18,26 @@ One device, named after the zone you follow (for example
 
 All three keep their history, so they show up as charts on your dashboard.
 
-## Get an API token
+## Get an API key
 
-1. Create a free account on the
+The free access is the one named **Home Assistant** — it is the plan for
+personal home automation, and it works exactly the same for Gladys.
+
+1. Create an account on the
    [Electricity Maps portal](https://portal.electricitymaps.com/).
-2. Copy the **API token** shown in the portal.
-3. Note your **zone**: the free personal plan gives access to one zone (your
-   home zone). Zone identifiers look like `FR`, `DE`, `ES`, `GB` or
-   `US-CAL-CISO`; the full list is served by
-   <https://api.electricitymap.org/v3/zones>.
+2. Go to **Settings → Access** and pick the **Home Assistant** tab (the other
+   tabs, _Trial_ and _Academic_, are different offers). Activate it: its free
+   use terms are personal, non-commercial and non-revenue-generating use —
+   which is what a home automation server does.
+3. Go to **Settings → API keys** and create your key, then copy it.
+4. Note your **zone**: this free access gives you one zone (your home zone).
+   Zone identifiers look like `FR`, `DE`, `ES`, `GB` or `US-CAL-CISO`; the
+   full list is served by <https://api.electricitymap.org/v3/zones>.
 
 ## Configuration
 
 1. Open the **Configuration** tab of the integration.
-2. Paste your **API token**.
+2. Paste the **API key** created with the Home Assistant access.
 3. Set the **zone** to follow (`FR` by default).
 4. Optionally adjust the **refresh interval** (900 seconds by default).
 5. Save, then click **Test the connection**: the current carbon intensity of

@@ -48,6 +48,12 @@ request quota: polling faster buys nothing.
 | `zone`           | `string` | `FR`    | Zone to follow (`FR`, `DE`, `US-CAL-CISO`…)     |
 | `poll_frequency` | `number` | `900`   | Refresh interval, in seconds                    |
 
+The free API key is the one issued under the **Home Assistant** access of the
+[portal](https://portal.electricitymaps.com/) (**Settings → Access → Home
+Assistant**, then **Settings → API keys**) — the plan for personal,
+non-commercial home automation, which is what Gladys is. _Trial_ and
+_Academic_ are separate offers.
+
 The token is a `secret` field: it is stored by Gladys and never sent back to
 the frontend. A **Test the connection** button in the Configuration screen
 performs a live request and shows the current carbon intensity of the zone.

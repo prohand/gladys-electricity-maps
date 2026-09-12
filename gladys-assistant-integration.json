@@ -18,13 +18,16 @@
       "type": "section",
       "label": { "en": "Getting started", "fr": "Pour commencer" },
       "description": {
-        "en": "Electricity Maps publishes the carbon intensity of electricity grids worldwide. Create a free personal account, copy your API token, then set the zone you want to follow (for example FR, DE or US-CAL-CISO).",
-        "fr": "Electricity Maps publie l'intensité carbone des réseaux électriques dans le monde. Créez un compte personnel gratuit, copiez votre token API, puis indiquez la zone à suivre (par exemple FR, DE ou US-CAL-CISO)."
+        "en": "Electricity Maps publishes the carbon intensity of electricity grids worldwide. Create a free account on the portal, then in Settings > Access activate the \"Home Assistant\" plan: it is the free, personal and non-commercial one (Trial and Academic are the other tabs). Create your key in Settings > API keys, paste it below, then set the zone you want to follow (for example FR, DE or US-CAL-CISO).",
+        "fr": "Electricity Maps publie l'intensité carbone des réseaux électriques dans le monde. Créez un compte gratuit sur le portail, puis dans Settings > Access activez l'offre \"Home Assistant\" : c'est la gratuite, personnelle et non commerciale (Trial et Academic sont les autres onglets). Créez votre clé dans Settings > API keys, collez-la ci-dessous, puis indiquez la zone à suivre (par exemple FR, DE ou US-CAL-CISO)."
       },
       "links": [
         {
           "url": "https://portal.electricitymaps.com/",
-          "label": { "en": "Get a free API token", "fr": "Obtenir un token API gratuit" }
+          "label": {
+            "en": "Portal: activate Home Assistant access",
+            "fr": "Portail : activer l'accès Home Assistant"
+          }
         },
         {
           "url": "https://api.electricitymap.org/v3/zones",
@@ -37,8 +40,8 @@
       "type": "secret",
       "label": { "en": "API token", "fr": "Token API" },
       "description": {
-        "en": "Personal API token from the Electricity Maps portal.",
-        "fr": "Token API personnel obtenu sur le portail Electricity Maps."
+        "en": "API key created in the portal under the free \"Home Assistant\" access.",
+        "fr": "Clé API créée sur le portail avec l'accès gratuit \"Home Assistant\"."
       },
       "required": true,
       "placeholder": { "en": "Your Electricity Maps token", "fr": "Votre token Electricity Maps" }

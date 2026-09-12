@@ -19,20 +19,28 @@ Un appareil, nommé d'après la zone suivie (par exemple
 Les trois conservent leur historique : ils s'affichent en graphique sur votre
 tableau de bord.
 
-## Obtenir un token API
+## Obtenir une clé API
 
-1. Créez un compte gratuit sur le
+L'accès gratuit est celui qui s'appelle **Home Assistant** — c'est l'offre
+prévue pour la domotique personnelle, et elle fonctionne à l'identique pour
+Gladys.
+
+1. Créez un compte sur le
    [portail Electricity Maps](https://portal.electricitymaps.com/).
-2. Copiez le **token API** affiché sur le portail.
-3. Notez votre **zone** : l'offre personnelle gratuite donne accès à une zone
-   (votre zone d'origine). Les identifiants ressemblent à `FR`, `DE`, `ES`,
-   `GB` ou `US-CAL-CISO` ; la liste complète est servie par
+2. Allez dans **Settings → Access** et choisissez l'onglet **Home Assistant**
+   (les autres onglets, _Trial_ et _Academic_, sont d'autres offres).
+   Activez-le : ses conditions d'usage gratuit sont un usage personnel, non
+   commercial et sans revenu — ce que fait un serveur domotique.
+3. Allez dans **Settings → API keys**, créez votre clé et copiez-la.
+4. Notez votre **zone** : cet accès gratuit donne droit à une zone (votre zone
+   d'origine). Les identifiants ressemblent à `FR`, `DE`, `ES`, `GB` ou
+   `US-CAL-CISO` ; la liste complète est servie par
    <https://api.electricitymap.org/v3/zones>.
 
 ## Configuration
 
 1. Ouvrez l'onglet **Configuration** de l'intégration.
-2. Collez votre **token API**.
+2. Collez la **clé API** créée avec l'accès Home Assistant.
 3. Indiquez la **zone** à suivre (`FR` par défaut).
 4. Ajustez si besoin l'**intervalle de rafraîchissement** (900 secondes par
    défaut).
