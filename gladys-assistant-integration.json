@@ -6,17 +6,25 @@
     "en": "Live carbon intensity and carbon-free share of your electricity grid.",
     "fr": "Intensité carbone et part d'électricité décarbonée de votre réseau."
   },
-  "version": "1.0.0",
-  "docker_image": "ghcr.io/prohand/gladys-electricity-maps:1.0.0",
+  "version": "1.0.1",
+  "docker_image": "ghcr.io/prohand/gladys-electricity-maps:1.0.1",
   "gladys_version": ">=4.86.0",
   "cover_image": "https://raw.githubusercontent.com/prohand/gladys-electricity-maps/main/cover.jpg",
-  "categories": ["energy", "environment"],
-  "transports": ["cloud"],
+  "categories": [
+    "energy",
+    "environment"
+  ],
+  "transports": [
+    "cloud"
+  ],
   "config_schema": [
     {
       "key": "intro",
       "type": "section",
-      "label": { "en": "Getting started", "fr": "Pour commencer" },
+      "label": {
+        "en": "Getting started",
+        "fr": "Pour commencer"
+      },
       "description": {
         "en": "Electricity Maps publishes the carbon intensity of electricity grids worldwide. Create a free account on the portal, then in Settings > Access activate the \"Home Assistant\" plan: it is the free, personal and non-commercial one (Trial and Academic are the other tabs). Create your key in Settings > API keys, paste it below, then set the zone you want to follow (for example FR, DE or US-CAL-CISO). A free key covers ONE zone: use the zone shown next to it, or every request answers 401. The free plan serves the carbon intensity and the carbon-free share; the renewable share needs a paid plan and stays empty otherwise.",
         "fr": "Electricity Maps publie l'intensité carbone des réseaux électriques dans le monde. Créez un compte gratuit sur le portail, puis dans Settings > Access activez l'offre \"Home Assistant\" : c'est la gratuite, personnelle et non commerciale (Trial et Academic sont les autres onglets). Créez votre clé dans Settings > API keys, collez-la ci-dessous, puis indiquez la zone à suivre (par exemple FR, DE ou US-CAL-CISO). Une clé gratuite ne couvre qu'UNE zone : indiquez celle affichée à côté d'elle, sinon chaque requête répond 401. L'offre gratuite fournit l'intensité carbone et la part décarbonée ; la part renouvelable demande une offre payante et reste sinon vide."
@@ -31,37 +39,55 @@
         },
         {
           "url": "https://api.electricitymaps.com/v3/zones",
-          "label": { "en": "List of available zones", "fr": "Liste des zones disponibles" }
+          "label": {
+            "en": "List of available zones",
+            "fr": "Liste des zones disponibles"
+          }
         }
       ]
     },
     {
       "key": "api_token",
       "type": "secret",
-      "label": { "en": "API token", "fr": "Token API" },
+      "label": {
+        "en": "API token",
+        "fr": "Token API"
+      },
       "description": {
         "en": "API key created in the portal under the free \"Home Assistant\" access.",
         "fr": "Clé API créée sur le portail avec l'accès gratuit \"Home Assistant\"."
       },
       "required": true,
-      "placeholder": { "en": "Your Electricity Maps token", "fr": "Votre token Electricity Maps" }
+      "placeholder": {
+        "en": "Your Electricity Maps token",
+        "fr": "Votre token Electricity Maps"
+      }
     },
     {
       "key": "zone",
       "type": "string",
-      "label": { "en": "Zone", "fr": "Zone" },
+      "label": {
+        "en": "Zone",
+        "fr": "Zone"
+      },
       "description": {
         "en": "Identifier of the grid zone to follow, e.g. FR, DE, US-CAL-CISO. Copy the zone shown next to your key in the portal: a free Home Assistant key only covers that one.",
         "fr": "Identifiant de la zone à suivre, par exemple FR, DE, US-CAL-CISO. Recopiez la zone affichée à côté de votre clé sur le portail : une clé Home Assistant gratuite ne couvre que celle-là."
       },
       "required": true,
       "default": "FR",
-      "placeholder": { "en": "FR", "fr": "FR" }
+      "placeholder": {
+        "en": "FR",
+        "fr": "FR"
+      }
     },
     {
       "key": "poll_frequency",
       "type": "number",
-      "label": { "en": "Refresh interval (s)", "fr": "Intervalle de rafraîchissement (s)" },
+      "label": {
+        "en": "Refresh interval (s)",
+        "fr": "Intervalle de rafraîchissement (s)"
+      },
       "description": {
         "en": "How often the zone is polled, in seconds. Electricity Maps refreshes about once an hour and free plans have a monthly request quota: 900 s is a good balance.",
         "fr": "Fréquence d'interrogation de la zone, en secondes. Electricity Maps se met à jour environ une fois par heure et les offres gratuites ont un quota mensuel de requêtes : 900 s est un bon compromis."
@@ -75,7 +101,10 @@
   "actions": [
     {
       "key": "test_connection",
-      "label": { "en": "Test the connection", "fr": "Tester la connexion" },
+      "label": {
+        "en": "Test the connection",
+        "fr": "Tester la connexion"
+      },
       "timeout_seconds": 30
     }
   ]
