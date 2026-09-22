@@ -207,6 +207,22 @@ free plans have a monthly request quota.
 | `quota exceeded (HTTP 429)`        | Increase the refresh interval, or wait for the quota to reset      |
 | `Electricity Maps unreachable`     | Network or DNS problem on the Gladys host                          |
 
+### The value differs from the Electricity Maps site
+
+That is expected, the two do not show the same thing:
+
+- **The integration reads one value per hour.** A free key can only call
+  `/v3/home-assistant`, which serves the value of the current hour (often an
+  estimate).
+- **The site draws 5 or 15-minute points**, flagged "Preliminary". When the
+  intensity moves fast, a 22:45 point can be far from the hourly value.
+- **The data is revised afterwards.** Estimated then preliminary values get
+  corrected by Electricity Maps over the following hours.
+
+To compare, use the same hour: the logs give the hour of the value read
+(`Carbon intensity: 66 gCO₂eq/kWh (hourly value of 2026-09-22T20:00:00.000Z)`,
+UTC time), and switch the site to the **hourly** granularity.
+
 ### The sensors still read "Unknown"
 
 Two possible causes:

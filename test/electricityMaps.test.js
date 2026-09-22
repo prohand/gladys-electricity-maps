@@ -38,6 +38,32 @@ test('fetchGridStatus returns the intensity and the carbon-free share', async ()
   );
 });
 
+test('fetchGridStatus returns the hour the value belongs to', async () => {
+  // The endpoint serves hourly values: the hour is what lets the user compare
+  // it with the right point of the Electricity Maps site.
+  globalThis.fetch = async () => ({
+    ok: true,
+    json: async () => ({
+      ...homeAssistantBody(),
+      data: {
+        carbonIntensity: 66,
+        fossilFuelPercentage: 9.5,
+        datetime: '2026-09-22T20:00:00.000Z',
+      },
+    }),
+  });
+
+  const result = await fetchGridStatus(CONFIG);
+  assert.equal(result.datetime, '2026-09-22T20:00:00.000Z');
+});
+
+test('fetchGridStatus returns a null hour when the API sends none', async () => {
+  globalThis.fetch = async () => ({ ok: true, json: async () => homeAssistantBody() });
+
+  const result = await fetchGridStatus(CONFIG);
+  assert.equal(result.datetime, null);
+});
+
 test('fetchGridStatus calls the endpoint a free key is allowed to call', async () => {
   // The free "Home Assistant" access only serves /v3/home-assistant: calling
   // /v3/carbon-intensity/latest with a free key answers 401.
