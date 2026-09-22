@@ -106,7 +106,10 @@ sélecteur de widgets de votre tableau de bord. Elle affiche :
 - la **zone** suivie, le **niveau carbone** du moment et l'ancienneté de la
   dernière mesure ;
 - une tuile par capteur (intensité carbone, part décarbonée et, si votre offre
-  la sert, part renouvelable), mises à jour en direct ;
+  la sert, part renouvelable), mises à jour en direct et **colorées** selon ce
+  qu'elles affichent : l'intensité carbone prend la couleur de son niveau, les
+  deux pourcentages passent du vert (70 % et plus) à l'orange (40 % et plus)
+  puis au rouge ;
 - un **graphique** de l'intensité carbone sur les dernières 24 heures ;
 - un bouton **Actualiser** (interroge Electricity Maps tout de suite) et un lien
   vers la carte en direct de votre zone.

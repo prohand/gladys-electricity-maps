@@ -139,6 +139,31 @@ test('a value the API did not serve leaves no tile behind', async () => {
   );
 });
 
+test('the tiles are coloured by what they read, live or static', async () => {
+  read({ carbonIntensity: 480, carbonFreePercentage: 22, renewablePercentage: 55 });
+  for (const deviceCreated of [true, false]) {
+    const gladys = gladysWith({ deviceCreated });
+    const content = await widget.get(gladys, { config });
+    const tiles = content.components.filter((component) => component.type === 'value');
+    assert.deepEqual(
+      tiles.map((tile) => tile.color),
+      ['danger', 'danger', 'warning'],
+      `a dirty grid reads as such on the ${deviceCreated ? 'live' : 'static'} card`,
+    );
+  }
+});
+
+test('a clean grid colours its tiles green', async () => {
+  read({ renewablePercentage: 80 });
+  const gladys = gladysWith({ deviceCreated: true });
+  const content = await widget.get(gladys, { config });
+  const tiles = content.components.filter((component) => component.type === 'value');
+  assert.deepEqual(
+    tiles.map((tile) => tile.color),
+    ['success', 'success', 'success'],
+  );
+});
+
 test('the status row carries what no device feature holds', async () => {
   read();
   const gladys = gladysWith({ deviceCreated: true });

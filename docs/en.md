@@ -101,7 +101,9 @@ picker of your dashboard. It shows:
 - the **zone** you follow, the current **carbon level** and how old the last
   reading is;
 - one tile per sensor (carbon intensity, carbon-free share and, if your plan
-  serves it, renewable share), updated live;
+  serves it, renewable share), updated live and **coloured** after what they
+  show: the carbon intensity takes the colour of its level, the two shares go
+  from green (70 % and above) to orange (40 % and above) and then red;
 - a **chart** of the carbon intensity over the last 24 hours;
 - a **Refresh** button (reads Electricity Maps right away) and a link to the
   live map of your zone.
