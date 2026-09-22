@@ -106,17 +106,21 @@ sélecteur de widgets de votre tableau de bord. Elle affiche :
 - la **zone** suivie, le **niveau carbone** du moment et l'ancienneté de la
   dernière mesure ;
 - une tuile par capteur (intensité carbone, part décarbonée et, si votre offre
-  la sert, part renouvelable), mises à jour en direct et **colorées** selon ce
-  qu'elles affichent : l'intensité carbone prend la couleur de son niveau, les
-  deux pourcentages passent du vert (70 % et plus) à l'orange (40 % et plus)
-  puis au rouge ;
+  la sert, part renouvelable), dont le **chiffre est coloré** selon ce qu'il
+  dit : l'intensité carbone prend la couleur de son niveau, les deux
+  pourcentages passent du vert (70 % et plus) à l'orange (40 % et plus) puis au
+  rouge — les mêmes couleurs que les badges de la liste des appareils ;
 - un **graphique** de l'intensité carbone sur les dernières 24 heures ;
 - un bouton **Actualiser** (interroge Electricity Maps tout de suite) et un lien
   vers la carte en direct de votre zone.
 
-Le graphique et les tuiles en direct s'appuient sur l'appareil : tant que vous
-ne l'avez pas ajouté depuis l'écran **Découverte**, la carte affiche quand même
-les valeurs, sans le graphique, et vous le rappelle.
+Les tuiles sont rafraîchies à chaque lecture d'Electricity Maps : la carte est
+re-sollicitée juste après chaque relève, donc les chiffres suivent la même
+cadence que les capteurs.
+
+Le graphique, lui, s'appuie sur l'appareil : tant que vous ne l'avez pas ajouté
+depuis l'écran **Découverte**, la carte affiche quand même les valeurs, sans le
+graphique, et vous le rappelle.
 
 ## Le niveau carbone
 

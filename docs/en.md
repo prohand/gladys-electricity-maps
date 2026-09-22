@@ -101,16 +101,19 @@ picker of your dashboard. It shows:
 - the **zone** you follow, the current **carbon level** and how old the last
   reading is;
 - one tile per sensor (carbon intensity, carbon-free share and, if your plan
-  serves it, renewable share), updated live and **coloured** after what they
-  show: the carbon intensity takes the colour of its level, the two shares go
-  from green (70 % and above) to orange (40 % and above) and then red;
+  serves it, renewable share), each **figure coloured** after what it says: the
+  carbon intensity takes the colour of its level, the two shares go from green
+  (70 % and above) to orange (40 % and above) and then red — the same colours
+  as the badges of the device list;
 - a **chart** of the carbon intensity over the last 24 hours;
 - a **Refresh** button (reads Electricity Maps right away) and a link to the
   live map of your zone.
 
-The chart and the live tiles rely on the device: until you add it from the
-**Discovery** screen, the card still shows the values, without the chart, and
-tells you so.
+The tiles are refreshed on every Electricity Maps reading: the card is pulled
+again right after each poll, so the figures move at the pace of the sensors.
+
+The chart relies on the device: until you add it from the **Discovery** screen,
+the card still shows the values, without the chart, and tells you so.
 
 ## The carbon level
 

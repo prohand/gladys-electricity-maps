@@ -21,9 +21,9 @@ const config = normalizeConfig({ api_token: 'test-token', zone: 'FR' });
 const widget = WIDGETS[WIDGET_KEYS.GRID_CARBON];
 
 // Until a probe or a poll has settled it, the plan is ASSUMED to serve the
-// power breakdown: the device advertises the renewable sensor, so the card
-// binds a tile to it. The last test settles it the other way, which is why it
-// comes last — the answer is remembered for the process lifetime.
+// power breakdown, so a reading may carry a renewable share. The last test
+// settles it the other way, which is why it comes last — the answer is
+// remembered for the process lifetime.
 const realFetch = globalThis.fetch;
 
 beforeEach(() => {
@@ -81,26 +81,37 @@ test('an empty configuration says what to do, and offers nothing else', async ()
   assert.match(content.components[0].text.fr, /token/i);
 });
 
-test('the card binds to the device features once the device exists', async () => {
+test('the chart binds to the device feature once the device exists', async () => {
   read();
   const gladys = gladysWith({ deviceCreated: true });
   const content = await widget.get(gladys, { config });
   const features = gridCarbon.featureExternalIds(gladys, config);
 
-  const tiles = content.components.filter((component) => component.type === 'value');
-  assert.deepEqual(
-    tiles.map((tile) => tile.device_feature),
-    [features.carbonIntensity, features.carbonFree, features.renewable],
-    'the tiles follow the published states instead of the content TTL',
-  );
-  for (const tile of tiles) {
-    assert.equal(tile.value, undefined, 'a device-bound tile carries no value of its own');
-  }
-
   const chart = content.components.find((component) => component.type === 'chart');
   assert.deepEqual(chart.device_features, [features.carbonIntensity]);
   assert.equal(chart.interval, 'last-day', 'the history Gladys already keeps');
   assert.equal(chart.series, undefined, 'never re-send points the core has');
+});
+
+test('the tiles carry their own value, which is what the core agrees to colour', async () => {
+  read();
+  const gladys = gladysWith({ deviceCreated: true });
+  const content = await widget.get(gladys, { config });
+
+  const tiles = content.components.filter((component) => component.type === 'value');
+  assert.deepEqual(
+    tiles.map((tile) => tile.value),
+    [57, 92],
+    'the figures come from the reading, re-pulled after every poll',
+  );
+  for (const tile of tiles) {
+    assert.equal(
+      tile.device_feature,
+      undefined,
+      'a device-bound value is drawn in the default ink, colour or no colour',
+    );
+    assert.ok(tile.color, 'and a tile without a colour says nothing more than a number');
+  }
 });
 
 test('without the device, the figures are still shown, and the chart is not', async () => {
@@ -123,7 +134,7 @@ test('without the device, the figures are still shown, and the chart is not', as
   assert.ok(!typesOf(content).includes('chart'), 'no device, no history to chart');
   assert.ok(
     content.components.some((component) => component.type === 'text'),
-    'the card says where the live tiles and the chart come from',
+    'the card says where the chart comes from',
   );
 });
 
@@ -139,7 +150,7 @@ test('a value the API did not serve leaves no tile behind', async () => {
   );
 });
 
-test('the tiles are coloured by what they read, live or static', async () => {
+test('the tiles are coloured by what they read, with or without the device', async () => {
   read({ carbonIntensity: 480, carbonFreePercentage: 22, renewablePercentage: 55 });
   for (const deviceCreated of [true, false]) {
     const gladys = gladysWith({ deviceCreated });
@@ -148,7 +159,7 @@ test('the tiles are coloured by what they read, live or static', async () => {
     assert.deepEqual(
       tiles.map((tile) => tile.color),
       ['danger', 'danger', 'warning'],
-      `a dirty grid reads as such on the ${deviceCreated ? 'live' : 'static'} card`,
+      `a dirty grid reads as such ${deviceCreated ? 'with' : 'without'} the device`,
     );
   }
 });
@@ -251,6 +262,6 @@ test('the renewable tile disappears once the plan refuses the endpoint', async (
   read();
   const content = await widget.get(gladys, { config });
   const tiles = content.components.filter((component) => component.type === 'value');
-  assert.equal(tiles.length, 2, 'a tile bound to an unpublished feature would read empty forever');
+  assert.equal(tiles.length, 2, 'no reading of the share, no tile');
   assert.deepEqual(validateWidgetContent(content), []);
 });
