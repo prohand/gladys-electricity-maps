@@ -98,8 +98,9 @@ Gladys.
 Since Gladys 5.1 the integration adds a **Grid carbon** card to the widget
 picker of your dashboard. It shows:
 
-- the **zone** you follow, the current **carbon level** and how old the last
-  reading is;
+- the **zone** you follow, the current **carbon level** and the **hour of the
+  value** ("current hour", "previous hour", "3 h ago"): Electricity Maps serves
+  one value per hour, so a read at 20:47 shows the value of the 20:00 hour;
 - one tile per sensor (carbon intensity, carbon-free share and, if your plan
   serves it, renewable share), each **figure coloured** after what it says: the
   carbon intensity takes the colour of its level, the two shares go from green

@@ -217,6 +217,7 @@ export const gridCarbon = {
       carbonIntensity: null,
       carbonFreePercentage: null,
       renewablePercentage: null,
+      datetime: null,
     };
 
     if (status.status === 'fulfilled') {
@@ -228,6 +229,7 @@ export const gridCarbon = {
       logger.info(`Carbon-free: ${fossilFreePercentage}%`);
       values.carbonIntensity = carbonIntensity;
       values.carbonFreePercentage = fossilFreePercentage;
+      values.datetime = datetime;
       pushState(states, ids.feature(FEATURE.CARBON_INTENSITY), carbonIntensity);
       pushState(states, ids.feature(FEATURE.CARBON_FREE), fossilFreePercentage);
     } else {
@@ -235,7 +237,7 @@ export const gridCarbon = {
     }
 
     if (breakdown?.status === 'fulfilled') {
-      const { fossilFreePercentage, renewablePercentage } = breakdown.value;
+      const { fossilFreePercentage, renewablePercentage, datetime } = breakdown.value;
       logger.info(`Renewable: ${renewablePercentage}%`);
       // The plan does serve it: keep the sensor advertised.
       rememberPowerBreakdownAllowed(config);
@@ -244,6 +246,7 @@ export const gridCarbon = {
       if (status.status !== 'fulfilled') {
         // The grid status is down but the breakdown carries the same share.
         values.carbonFreePercentage = fossilFreePercentage;
+        values.datetime = datetime;
         pushState(states, ids.feature(FEATURE.CARBON_FREE), fossilFreePercentage);
       }
     } else if (breakdown) {

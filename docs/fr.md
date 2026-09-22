@@ -103,8 +103,10 @@ Gladys.
 Depuis Gladys 5.1, l'intégration ajoute une carte **Carbone du réseau** dans le
 sélecteur de widgets de votre tableau de bord. Elle affiche :
 
-- la **zone** suivie, le **niveau carbone** du moment et l'ancienneté de la
-  dernière mesure ;
+- la **zone** suivie, le **niveau carbone** du moment et l'**heure de la
+  valeur** (« heure en cours », « heure précédente », « il y a 3 h ») :
+  Electricity Maps sert une valeur par heure, donc une relève à 20 h 47 montre
+  la valeur de l'heure de 20 h ;
 - une tuile par capteur (intensité carbone, part décarbonée et, si votre offre
   la sert, part renouvelable), dont le **chiffre est coloré** selon ce qu'il
   dit : l'intensité carbone prend la couleur de son niveau, les deux

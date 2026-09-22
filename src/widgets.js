@@ -9,7 +9,7 @@
 // keeps — an integration has no business re-sending 24 hours of points it
 // published one by one. Everything else the card shows is carried by the
 // content itself: the zone, the carbon LEVEL (a reading of the intensity, see
-// src/carbonLevel.js), how old the last reading is, and the three figures.
+// src/carbonLevel.js), which hour the figures belong to, and the three figures.
 //
 // WHY THE TILES ARE NOT DEVICE-BOUND. A `device_feature` tile renders the
 // published state through the core's own value component, which ignores the
@@ -163,7 +163,7 @@ async function buildGridCarbonContent(gladys, config) {
   return { ttl_seconds: ttlSeconds, components };
 }
 
-/** Zone, carbon level and freshness: the three things no device feature holds. */
+/** Zone, carbon level and hour of the value: the three things no device feature holds. */
 function statusComponent(snapshot) {
   return {
     type: 'status',
@@ -175,12 +175,32 @@ function statusComponent(snapshot) {
         color: carbonLevelColor(snapshot.level),
         icon: 'activity',
       },
-      {
-        label: { en: 'Last reading', fr: 'Dernière mesure' },
-        value: formatAge(gridSnapshotAgeSeconds(snapshot)),
-        icon: 'clock',
-      },
+      freshnessItem(snapshot),
     ],
+  };
+}
+
+/**
+ * How fresh the figures are. The API serves HOURLY values (the free
+ * /v3/home-assistant endpoint, which every plan reads the intensity from), so
+ * what matters is the hour the value belongs to, not when the poll ran: a poll
+ * at 20:47 still shows the value of the 20:00 hour. The hour is said relative
+ * to now because the core gives no time zone to format a clock time in — and a
+ * UTC hour would read wrong on most dashboards. Falls back to the age of the
+ * poll when the API sent no date.
+ */
+function freshnessItem(snapshot) {
+  if (snapshot.valueAt === null) {
+    return {
+      label: { en: 'Last reading', fr: 'Dernière mesure' },
+      value: formatAge(gridSnapshotAgeSeconds(snapshot)),
+      icon: 'clock',
+    };
+  }
+  return {
+    label: { en: 'Hourly value', fr: 'Valeur horaire' },
+    value: formatValueHour(snapshot.valueAt),
+    icon: 'clock',
   };
 }
 
@@ -307,6 +327,24 @@ function ageText(seconds, now, phrase) {
   }
   const minutes = Math.round(seconds / 60);
   return minutes < 60 ? phrase(minutes, 'min') : phrase(Math.round(minutes / 60), 'h');
+}
+
+const HOUR_MS = 3600 * 1000;
+
+/**
+ * Hour a value belongs to, relative to the current one. Electricity Maps dates
+ * its hours in UTC, and so is the comparison: whole-hour time zones agree on
+ * where an hour starts, so "current hour" means the same thing everywhere.
+ */
+function formatValueHour(valueAt) {
+  const hoursAgo = Math.floor(Date.now() / HOUR_MS) - Math.floor(valueAt / HOUR_MS);
+  if (hoursAgo <= 0) {
+    return { en: 'current hour', fr: 'heure en cours' };
+  }
+  if (hoursAgo === 1) {
+    return { en: 'previous hour', fr: 'heure précédente' };
+  }
+  return { en: `${hoursAgo} h ago`, fr: `il y a ${hoursAgo} h` };
 }
 
 /**
