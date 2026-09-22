@@ -5,21 +5,26 @@
 // here at runtime, in the core's declarative vocabulary (no HTML, no CSS: the
 // core owns the theme, the dark mode and the responsiveness).
 //
-// The card is deliberately built around the DEVICE when the user created it:
-//   - the tiles are `device_feature`-bound, so they follow the published
-//     states live, without waiting for the content TTL;
-//   - the chart is `device_features`-bound, so it draws the history Gladys
-//     already keeps — an integration has no business re-sending 24 hours of
-//     points it published one by one.
-// The only things the content carries itself are what no feature holds: the
-// zone, the carbon LEVEL (a reading of the intensity, see src/carbonLevel.js)
-// and how old the last reading is.
+// The chart is `device_features`-bound, so it draws the history Gladys already
+// keeps — an integration has no business re-sending 24 hours of points it
+// published one by one. Everything else the card shows is carried by the
+// content itself: the zone, the carbon LEVEL (a reading of the intensity, see
+// src/carbonLevel.js), how old the last reading is, and the three figures.
+//
+// WHY THE TILES ARE NOT DEVICE-BOUND. A `device_feature` tile renders the
+// published state through the core's own value component, which ignores the
+// `color` the content declares: the figure is always drawn in the default ink.
+// A tile that carries its own `value` IS coloured, so the number is green,
+// orange or red like the badges of the device list — which is the whole point
+// of colouring a tile. Nothing is lost by dropping the live binding: the
+// figures only move when the poll loop reads Electricity Maps, and that loop
+// nudges the widget (`requestWidgetRefresh`, see index.js) right after every
+// reading, so the card is re-pulled at the exact moment a value changes.
 //
 // The device may not exist though: the widget can be added to a dashboard
 // before the device is created in the Discovery screen, and the configuration
 // may still be empty. Rather than an empty card, each of those states gets a
-// content that says what to do — and the values, when we have them, are shown
-// as plain tiles so the widget is useful even then.
+// content that says what to do — the figures are shown either way.
 //
 // No `settings` are declared: the integration follows ONE zone, the one in its
 // configuration, so there is nothing to pick per instance. Adding a zone
@@ -46,9 +51,9 @@ const REFRESH_ACTION = 'refresh';
 // The live Electricity Maps map, deep-linked on the followed zone.
 const MAP_URL = 'https://app.electricitymaps.com/zone';
 
-// Unit shown on the tiles the content fills itself. The real unit
-// (gCO₂eq/kWh) is longer than the 6 characters a tile unit may hold; the
-// device-bound tiles take it from the feature and are not concerned.
+// Unit shown on the carbon intensity tile. The real unit (gCO₂eq/kWh) is
+// longer than the 6 characters a tile unit may hold, and the core truncates
+// what overflows: the short form is the one that reads.
 const SHORT_CARBON_UNIT = 'g/kWh';
 
 /**
@@ -125,40 +130,15 @@ async function buildGridCarbonContent(gladys, config) {
     };
   }
 
-  const features = gridCarbon.featureExternalIds(gladys, config);
   const deviceCreated = await isDeviceCreated(gladys, gridCarbon.deviceExternalId(gladys, config));
 
   // Content order matters: the core drops what overflows the budget in the
   // order it was sent, so the status and the tiles come before the chart and
   // the buttons.
-  const components = [statusComponent(snapshot)];
+  const components = [statusComponent(snapshot), ...valueTiles(snapshot)];
 
   if (deviceCreated) {
-    components.push(
-      {
-        type: 'value',
-        label: carbonIntensityLabel(),
-        icon: 'cloud',
-        color: carbonLevelColor(snapshot.level),
-        device_feature: features.carbonIntensity,
-      },
-      {
-        type: 'value',
-        label: carbonFreeLabel(),
-        icon: 'sun',
-        color: cleanShareColor(snapshot.carbonFreePercentage),
-        device_feature: features.carbonFree,
-      },
-    );
-    if (features.renewable !== null) {
-      components.push({
-        type: 'value',
-        label: renewableLabel(),
-        icon: 'wind',
-        color: cleanShareColor(snapshot.renewablePercentage),
-        device_feature: features.renewable,
-      });
-    }
+    const features = gridCarbon.featureExternalIds(gladys, config);
     components.push({
       type: 'chart',
       device_features: [features.carbonIntensity],
@@ -167,14 +147,14 @@ async function buildGridCarbonContent(gladys, config) {
       title: { en: 'Carbon intensity (24 h)', fr: 'Intensité carbone (24 h)' },
     });
   } else {
-    // The device is not created yet: no feature to bind to, and no history to
-    // chart. Show the figures we do hold, and say where the rest comes from.
-    components.push(...staticTiles(snapshot), {
+    // The device is not created yet: no history to chart. Say where it comes
+    // from — the figures themselves are already on the tiles.
+    components.push({
       type: 'text',
       variant: 'body',
       text: {
-        en: 'Add the Electricity Maps device from the Discovery screen to get live tiles and the history chart here.',
-        fr: "Ajoutez l'appareil Electricity Maps depuis l'écran Découverte pour obtenir ici des tuiles en direct et le graphique d'historique.",
+        en: 'Add the Electricity Maps device from the Discovery screen to get the history chart here.',
+        fr: "Ajoutez l'appareil Electricity Maps depuis l'écran Découverte pour obtenir ici le graphique d'historique.",
       },
     });
   }
@@ -204,8 +184,8 @@ function statusComponent(snapshot) {
   };
 }
 
-/** Plain tiles, for the card shown while the device does not exist. */
-function staticTiles(snapshot) {
+/** The three figures of the reading, each coloured by what it says. */
+function valueTiles(snapshot) {
   const tiles = [];
   if (snapshot.carbonIntensity !== null) {
     tiles.push({
@@ -272,12 +252,11 @@ function mapButton(config) {
 // and get their own bands. They are deliberately coarse: what the colour says
 // is "mostly clean / mixed / mostly fossil", the exact figure is on the tile.
 //
-// NOTE. On a device-bound tile the VALUE follows the published state live,
-// while the colour is the one the content was built with. Both are refreshed
-// at the pace of the poll loop (`contentTtl`), so a tile can hold the previous
-// band for as long as a reading is old — acceptable for a band that only moves
-// with the grid, and the alternative would be to re-push the content on every
-// state.
+// NOTE. The colour tints the figure itself, which is why the tiles carry
+// their own `value` rather than a `device_feature` (see the file header): the
+// core draws a device-bound value in the default ink whatever the content
+// says. The icon is coloured too, but only in the classic theme — the glass
+// theme paints every tile icon in its accent colour.
 // -----------------------------------------------------------------------------
 
 /** Bands of a "clean share" percentage, from the cleanest down. */
