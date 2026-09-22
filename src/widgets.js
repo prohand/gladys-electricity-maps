@@ -139,15 +139,23 @@ async function buildGridCarbonContent(gladys, config) {
         type: 'value',
         label: carbonIntensityLabel(),
         icon: 'cloud',
+        color: carbonLevelColor(snapshot.level),
         device_feature: features.carbonIntensity,
       },
-      { type: 'value', label: carbonFreeLabel(), icon: 'sun', device_feature: features.carbonFree },
+      {
+        type: 'value',
+        label: carbonFreeLabel(),
+        icon: 'sun',
+        color: cleanShareColor(snapshot.carbonFreePercentage),
+        device_feature: features.carbonFree,
+      },
     );
     if (features.renewable !== null) {
       components.push({
         type: 'value',
         label: renewableLabel(),
         icon: 'wind',
+        color: cleanShareColor(snapshot.renewablePercentage),
         device_feature: features.renewable,
       });
     }
@@ -184,7 +192,7 @@ function statusComponent(snapshot) {
       {
         label: { en: 'Carbon level', fr: 'Niveau carbone' },
         value: carbonLevelLabel(snapshot.level),
-        color: snapshot.level === null ? WIDGET_COLORS.NEUTRAL : carbonLevelColor(snapshot.level),
+        color: carbonLevelColor(snapshot.level),
         icon: 'activity',
       },
       {
@@ -206,7 +214,7 @@ function staticTiles(snapshot) {
       icon: 'cloud',
       value: snapshot.carbonIntensity,
       unit: SHORT_CARBON_UNIT,
-      color: snapshot.level === null ? WIDGET_COLORS.NEUTRAL : carbonLevelColor(snapshot.level),
+      color: carbonLevelColor(snapshot.level),
     });
   }
   if (snapshot.carbonFreePercentage !== null) {
@@ -216,6 +224,7 @@ function staticTiles(snapshot) {
       icon: 'sun',
       value: snapshot.carbonFreePercentage,
       unit: '%',
+      color: cleanShareColor(snapshot.carbonFreePercentage),
     });
   }
   if (snapshot.renewablePercentage !== null) {
@@ -225,6 +234,7 @@ function staticTiles(snapshot) {
       icon: 'wind',
       value: snapshot.renewablePercentage,
       unit: '%',
+      color: cleanShareColor(snapshot.renewablePercentage),
     });
   }
   return tiles;
@@ -248,6 +258,41 @@ function mapButton(config) {
     style: 'secondary',
     link: { url: `${MAP_URL}/${encodeURIComponent(config.zone)}` },
   };
+}
+
+// -----------------------------------------------------------------------------
+// Tile colours.
+//
+// A tile carries a SEMANTIC colour, which the core maps to its theme in light
+// and dark mode — never a hex value. The carbon intensity reuses the colour of
+// its band (src/carbonLevel.js), so the tile, the status dot and the scene
+// trigger tell the same story.
+//
+// The two percentages are read the other way round — the higher, the better —
+// and get their own bands. They are deliberately coarse: what the colour says
+// is "mostly clean / mixed / mostly fossil", the exact figure is on the tile.
+//
+// NOTE. On a device-bound tile the VALUE follows the published state live,
+// while the colour is the one the content was built with. Both are refreshed
+// at the pace of the poll loop (`contentTtl`), so a tile can hold the previous
+// band for as long as a reading is old — acceptable for a band that only moves
+// with the grid, and the alternative would be to re-push the content on every
+// state.
+// -----------------------------------------------------------------------------
+
+/** Bands of a "clean share" percentage, from the cleanest down. */
+const CLEAN_SHARE_BANDS = [
+  { min: 70, color: WIDGET_COLORS.SUCCESS },
+  { min: 40, color: WIDGET_COLORS.WARNING },
+  { min: 0, color: WIDGET_COLORS.DANGER },
+];
+
+/** Semantic colour of a carbon-free / renewable share, in percent. */
+function cleanShareColor(percentage) {
+  if (!Number.isFinite(percentage)) {
+    return WIDGET_COLORS.NEUTRAL;
+  }
+  return CLEAN_SHARE_BANDS.find((band) => percentage >= band.min).color;
 }
 
 // Tile labels, in one place: the same three names are used by the live and the
