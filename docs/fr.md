@@ -122,6 +122,25 @@ Le graphique, lui, s'appuie sur l'appareil : tant que vous ne l'avez pas ajouté
 depuis l'écran **Découverte**, la carte affiche quand même les valeurs, sans le
 graphique, et vous le rappelle.
 
+### Ce que la couleur coûte
+
+Gladys ne colore le chiffre d'une tuile que si la carte porte elle-même la
+valeur : une tuile branchée sur la feature de l'appareil est rendue par le
+composant du cœur, qui ignore la couleur demandée. La carte envoie donc ses
+propres chiffres, avec deux conséquences :
+
+- l'unité de l'intensité carbone s'affiche **`g/kWh`** et non `gCO₂eq/kWh` :
+  une unité de tuile tient en 6 caractères, au-delà le cœur tronque. La liste
+  des appareils, elle, garde l'unité complète ;
+- les tuiles ne suivent plus les états en temps réel : elles sont redessinées à
+  chaque re-lecture de la carte. En pratique cela ne change rien, la boucle de
+  relève sollicite le widget juste après chaque mesure — c'est-à-dire au moment
+  précis où un chiffre change.
+
+Enfin, la couleur teinte le **texte** du chiffre ; elle ne dessine pas une
+pastille pleine comme dans la liste des appareils. Le vocabulaire des widgets
+ne propose pas de badge sur une tuile.
+
 ## Le niveau carbone
 
 L'intensité carbone est un nombre ; le **niveau** est sa lecture en cinq

@@ -115,6 +115,24 @@ again right after each poll, so the figures move at the pace of the sensors.
 The chart relies on the device: until you add it from the **Discovery** screen,
 the card still shows the values, without the chart, and tells you so.
 
+### What the colour costs
+
+Gladys only colours the figure of a tile when the card carries the value
+itself: a tile bound to the device feature is rendered by the core's own
+component, which ignores the requested colour. The card therefore sends its own
+figures, with two consequences:
+
+- the carbon intensity unit reads **`g/kWh`**, not `gCO₂eq/kWh`: a tile unit
+  holds 6 characters and the core truncates what overflows. The device list
+  keeps the full unit;
+- the tiles no longer follow the states in real time: they are redrawn every
+  time the card is pulled again. In practice this changes nothing — the poll
+  loop nudges the widget right after each reading, which is exactly when a
+  figure changes.
+
+Finally, the colour tints the **text** of the figure; it does not draw a filled
+pill like the device list. The widget vocabulary has no badge on a tile.
+
 ## The carbon level
 
 The carbon intensity is a number; the **level** is its reading on five bands,
