@@ -1,6 +1,6 @@
 {
   "name": "gladys-electricity-maps",
-  "version": "1.0.1",
+  "version": "2.0.0",
   "private": true,
   "description": "Gladys Assistant external integration exposing the Electricity Maps carbon intensity of your grid zone as sensors.",
   "type": "module",
