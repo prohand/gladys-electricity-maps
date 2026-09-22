@@ -10,6 +10,11 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { DEVICE_BLUEPRINTS } from '../src/devices/index.js';
 import { DEFAULT_CONFIG, normalizeConfig } from '../src/config.js';
+import { CARBON_LEVELS, CARBON_LEVEL_DIRECTIONS } from '../src/carbonLevel.js';
+import { SCENE_ACTIONS, SCENE_TRIGGERS, publishCarbonLevelEvent } from '../src/scenes.js';
+import { WIDGETS } from '../src/widgets.js';
+import { rememberGridSnapshot } from '../src/gridSnapshot.js';
+import { createFakeGladys } from './helpers/fakeGladys.js';
 
 const manifest = JSON.parse(
   await readFile(new URL('../gladys-assistant-integration.json', import.meta.url), 'utf8'),
@@ -115,4 +120,147 @@ test('the manifest version matches the docker image tag', () => {
     manifest.docker_image.endsWith(`:${manifest.version}`),
     'the image tag and the manifest version must stay in lockstep',
   );
+});
+
+// --- Gladys 5.1 capabilities -------------------------------------------------
+// Widgets, scene triggers and scene actions are declared in the manifest and
+// implemented in the code: nothing but a test keeps the two lists together, and
+// a declared key with no handler is a card that fails in front of the user.
+
+test('declaring widgets and scene declarations requires Gladys >= 5.1.0', () => {
+  // Same rule as `categories`: an older core rejects any unknown manifest
+  // field, so the compatibility range has to move with the declarations.
+  const [, major, minor] = manifest.gladys_version.match(/>=\s*(\d+)\.(\d+)\.\d+/).map(Number);
+  assert.ok(
+    major > 5 || (major === 5 && minor >= 1),
+    `widgets and scene declarations require gladys_version >= 5.1.0, got "${manifest.gladys_version}"`,
+  );
+});
+
+test('every declared widget has a handler, and every handler is declared', () => {
+  const declared = manifest.widgets.map((w) => w.key);
+  assert.deepEqual(declared.sort(), Object.keys(WIDGETS).sort());
+  for (const [key, widget] of Object.entries(WIDGETS)) {
+    assert.equal(typeof widget.get, 'function', `widget "${key}" must resolve a content`);
+    assert.equal(typeof widget.action, 'function', `widget "${key}" must handle its buttons`);
+  }
+});
+
+test('every declared scene action has a handler, and every handler is declared', () => {
+  const declared = manifest.scene_actions.map((a) => a.key);
+  assert.deepEqual(declared.sort(), Object.keys(SCENE_ACTIONS).sort());
+});
+
+test('every trigger the code fires is declared in the manifest', () => {
+  const declared = new Set(manifest.scene_triggers.map((t) => t.key));
+  for (const key of Object.values(SCENE_TRIGGERS)) {
+    assert.ok(declared.has(key), `the code fires "${key}", which no trigger declares (404)`);
+  }
+});
+
+test('the widgets respect the store limits', () => {
+  assert.ok(manifest.widgets.length >= 1 && manifest.widgets.length <= 5);
+  for (const widget of manifest.widgets) {
+    assert.match(widget.key, /^[a-z0-9_]{2,32}$/);
+    for (const [lang, text] of Object.entries(widget.label)) {
+      assert.ok(text.length >= 3 && text.length <= 30, `widgets.label.${lang} must be 3-30 chars`);
+    }
+    for (const [lang, text] of Object.entries(widget.description ?? {})) {
+      assert.ok(text.length <= 100, `widgets.description.${lang} must be at most 100 chars`);
+    }
+    assert.match(widget.icon, /^[a-z0-9-]{1,40}$/, 'the icon is a Feather icon name');
+    // The refresh button reads Electricity Maps live: two HTTP calls of 15 s
+    // must fit in the ack the core waits for.
+    assert.ok(widget.action_timeout_seconds >= 60, 'a live read needs room to answer');
+  }
+});
+
+test('the scene declarations respect the store limits', () => {
+  for (const [list, entries] of Object.entries({
+    scene_triggers: manifest.scene_triggers,
+    scene_actions: manifest.scene_actions,
+  })) {
+    assert.ok(entries.length >= 1 && entries.length <= 20, `${list} holds 1 to 20 entries`);
+    for (const entry of entries) {
+      assert.match(entry.key, /^[a-z0-9_]{1,40}$/, `${list} key`);
+      assert.ok(entry.label.en, `${list} "${entry.key}" needs an English label`);
+      assert.ok((entry.fields ?? []).length <= 10, `${list} "${entry.key}" holds 10 fields`);
+      for (const field of entry.fields ?? []) {
+        assert.match(field.key, /^[a-z0-9_]+$/);
+        if (field.type === 'select' || field.type === 'multi_select') {
+          assert.ok(field.options.length >= 1, `"${field.key}" needs options`);
+        }
+      }
+    }
+  }
+});
+
+test('a trigger filter is never a toggle', () => {
+  // The core refuses a boolean trigger field: a toggle could not express
+  // "any", which is what an untouched filter has to mean.
+  for (const trigger of manifest.scene_triggers) {
+    for (const field of trigger.fields ?? []) {
+      assert.notEqual(field.type, 'boolean', `${trigger.key}.${field.key}`);
+    }
+  }
+});
+
+test('the scene variables and outputs are scalars, at most 20 of them', () => {
+  const lists = [
+    ...manifest.scene_triggers.map((t) => [t.key, t.variables ?? []]),
+    ...manifest.scene_actions.map((a) => [a.key, a.outputs ?? []]),
+  ];
+  for (const [key, entries] of lists) {
+    assert.ok(entries.length <= 20, `"${key}" declares at most 20 entries`);
+    for (const entry of entries) {
+      assert.ok(['string', 'number', 'boolean'].includes(entry.type), `${key}.${entry.key}`);
+      assert.ok(entry.label.en, `${key}.${entry.key} needs an English label`);
+    }
+  }
+});
+
+test('the levels of the trigger filter are the ones the code publishes', () => {
+  const trigger = manifest.scene_triggers.find(
+    (t) => t.key === SCENE_TRIGGERS.CARBON_LEVEL_CHANGED,
+  );
+  const declared = trigger.fields.find((f) => f.key === 'level').options.map((o) => o.value);
+  assert.deepEqual(
+    declared.sort(),
+    Object.values(CARBON_LEVELS).sort(),
+    'a filter the event can never match is a scene that never runs',
+  );
+
+  const directions = trigger.fields.find((f) => f.key === 'direction').options.map((o) => o.value);
+  assert.deepEqual(directions.sort(), Object.values(CARBON_LEVEL_DIRECTIONS).sort());
+});
+
+test('the event the code fires only carries declared keys', async () => {
+  const trigger = manifest.scene_triggers.find(
+    (t) => t.key === SCENE_TRIGGERS.CARBON_LEVEL_CHANGED,
+  );
+  // The core matches on the `fields` and exposes the `variables`: any other key
+  // of the event is silently dropped, which would be a value nobody can use.
+  const known = new Set([
+    ...trigger.fields.map((f) => f.key),
+    ...trigger.variables.map((v) => v.key),
+  ]);
+
+  const gladys = createFakeGladys();
+  const config = normalizeConfig({ api_token: 'test-token', zone: 'FR' });
+  const values = { carbonFreePercentage: 92, renewablePercentage: 28 };
+  rememberGridSnapshot(config, { carbonIntensity: 57, ...values });
+  await publishCarbonLevelEvent(
+    gladys,
+    rememberGridSnapshot(config, { carbonIntensity: 450, ...values }),
+  );
+
+  assert.equal(gladys.sceneEvents.length, 1, 'the level change must fire');
+  for (const key of Object.keys(gladys.sceneEvents[0].data)) {
+    assert.ok(known.has(key), `the event carries "${key}", which the manifest never declares`);
+  }
+  // And the other way round: a declared variable absent from the event is null
+  // in the scene, which is a promise not kept.
+  for (const variable of trigger.variables) {
+    assert.ok(variable.key in gladys.sceneEvents[0].data, `"${variable.key}" is never published`);
+  }
 });

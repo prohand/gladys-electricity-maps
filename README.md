@@ -56,6 +56,77 @@ then dropped, feature included, when the plan refuses it, instead of burning a
 request on every poll. The two reads are independent: one failing never loses
 the other.
 
+## Dashboard widget, scene trigger and scene action
+
+Gladys 5.1 lets an external integration extend the dashboard and the scene
+editor from its manifest. This integration declares one of each, all built on
+the **last reading the refresh loop already did** (`src/gridSnapshot.js`): none
+of them ever costs an extra Electricity Maps request unless the user explicitly
+asks for one.
+
+### Widget — `grid_carbon`
+
+One card, built around the device once the user created it:
+
+- a **status** block with the zone, the carbon **level** and the age of the
+  reading — the three things no device feature holds;
+- **live tiles** bound to the features (`device_feature`), so they follow the
+  published states instead of the content TTL;
+- a **chart** bound to the carbon intensity feature over the last 24 h, so the
+  core draws the history it already keeps rather than us re-sending points;
+- a **Refresh** button (a live read, relayed through `onWidgetAction`) and a
+  link to the Electricity Maps map of the zone.
+
+The card is never empty: with no token it says what to configure, with no
+reading yet it says so, and while the device does not exist it shows the plain
+values and points at the Discovery screen. Every one of those states is checked
+against the SDK's own `validateWidgetContent` in `test/widgets.test.js` — an
+empty report means the core renders the content exactly as sent.
+
+### Scene trigger — `carbon_level_changed`
+
+Fires when the carbon intensity of the zone moves from one **level** to
+another:
+
+| Level       | Carbon intensity     |
+| ----------- | -------------------- |
+| `very_low`  | < 100 gCO₂eq/kWh     |
+| `low`       | 100 – 200 gCO₂eq/kWh |
+| `moderate`  | 200 – 400 gCO₂eq/kWh |
+| `high`      | 400 – 600 gCO₂eq/kWh |
+| `very_high` | ≥ 600 gCO₂eq/kWh     |
+
+The scene author filters on the new level, on the direction (cleaner /
+dirtier), or on neither — an empty filter is a wildcard. The event exposes
+`zone`, `level`, `previous_level`, `direction`, `carbon_intensity`,
+`carbon_free_percentage` and `renewable_percentage` as
+`{{triggerEvent.data.<key>}}`.
+
+Two rules make it usable in a scene:
+
+- **one event per transition**, never one per refresh — the first reading of a
+  zone fires nothing (the grid did not change, we just started looking);
+- **hysteresis of 10 gCO₂eq/kWh** (`src/carbonLevel.js`): a value sitting on a
+  boundary has to move past it by the margin before the level follows, so a
+  grid hovering at 98–104 never restarts the scene every 15 minutes.
+
+Thresholds themselves are deliberately **not** a trigger: the carbon intensity
+is a state, published as a sensor, and Gladys already compares a device feature
+to a number. What the core cannot express is the transition, which is exactly
+what this trigger adds.
+
+### Scene action — `get_grid_data`
+
+Hands the last reading to the following actions of the scene, as the outputs
+`zone`, `level`, `carbon_intensity`, `carbon_free_percentage`,
+`renewable_percentage` and `age_seconds`.
+
+A **Read Electricity Maps first** toggle (off by default) forces a live read
+before answering. It is an explicit choice, not a default, because a free key
+has a monthly request quota and the data only moves about once an hour. The
+action fails rather than returning invented values when nothing was ever read:
+the rest of the scene must not branch on a number nobody measured.
+
 ## Polling
 
 The integration owns the timer (`src/poller.js`), running at the user setting
@@ -115,6 +186,10 @@ rather than rewriting the history of the previous one.
 │  ├─ devices/
 │  │  ├─ index.js                    #   device registry
 │  │  └─ gridCarbon.js               #   the grid device: features + onPoll
+│  ├─ widgets.js                     # dashboard widget: content + button handler
+│  ├─ scenes.js                      # scene trigger event + scene action handlers
+│  ├─ carbonLevel.js                 # carbon intensity bands and their hysteresis
+│  ├─ gridSnapshot.js                # last reading, shared by the widget and the scenes
 │  ├─ features.js                    # Gladys feature category/types/unit (+ fallback)
 │  ├─ electricityMaps.js             # Electricity Maps API driver (the only fetch)
 │  ├─ poller.js                      # internal refresh loop (Gladys caps polling at 1 min)
@@ -176,6 +251,9 @@ public and carry the GitHub topic `gladys-assistant-integration`.
 ## Notes
 
 - Requires **Node.js ≥ 20** (built-in global `fetch`, no HTTP dependency).
+- Requires **Gladys ≥ 5.1.0**: the `widgets`, `scene_triggers` and
+  `scene_actions` manifest fields appeared there, and an older core rejects the
+  whole manifest on any field it does not know (the same rule as `categories`).
 - No standard Gladys unit exists for gCO₂eq/kWh: the carbon intensity feature
   uses the generic `unknown` category and carries its unit in its name. The two
   percentages use the standard `percent` unit.

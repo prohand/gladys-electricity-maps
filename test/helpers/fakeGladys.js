@@ -7,8 +7,13 @@
 //   - publishDiscoveredDevices        -> record every attempt, and let a test
 //     make it fail (the core refusing an unknown feature category)
 //   - setConnectionStatus             -> record calls so tests can assert them
+//   - publishSceneEvent               -> record the scene trigger events
+//   - requestWidgetRefresh            -> record the widget freshness nudges
+//   - devices / getDevices            -> what the user actually created, which
+//     is what the widget binds its tiles and its chart to
 // This lets us test the pure "wiring" logic (discovery payloads, dispatch,
-// polling) without a running Gladys server or a real WebSocket.
+// polling, widget contents, scene events) without a running Gladys server or a
+// real WebSocket.
 // -----------------------------------------------------------------------------
 
 /**
@@ -16,22 +21,31 @@
  * @param {Function} [options.onPublishDevices] called with (devices, attemptIndex)
  *   on each publishDiscoveredDevices: throw from it to simulate a core refusing
  *   the payload.
+ * @param {Array} [options.devices] devices the user created, as the SDK exposes
+ *   them (`gladys.devices`): `[{ external_id }]`.
+ * @param {Function} [options.onPublishSceneEvent] called with (key, data) on
+ *   each publishSceneEvent: throw from it to simulate a core refusing it.
  */
-export function createFakeGladys({ onPublishDevices } = {}) {
+export function createFakeGladys({ onPublishDevices, devices = [], onPublishSceneEvent } = {}) {
   const published = [];
   const connectionStatuses = [];
   // One entry per publishDiscoveredDevices call, failed attempts included.
   const publishedDevices = [];
+  const sceneEvents = [];
+  const widgetRefreshes = [];
 
   return {
     published,
     connectionStatuses,
     publishedDevices,
+    sceneEvents,
+    widgetRefreshes,
+    devices,
 
-    async publishDiscoveredDevices(devices) {
-      publishedDevices.push(devices);
+    async publishDiscoveredDevices(discovered) {
+      publishedDevices.push(discovered);
       if (onPublishDevices) {
-        await onPublishDevices(devices, publishedDevices.length - 1);
+        await onPublishDevices(discovered, publishedDevices.length - 1);
       }
     },
 
@@ -55,6 +69,21 @@ export function createFakeGladys({ onPublishDevices } = {}) {
 
     async setConnectionStatus(connected, message) {
       connectionStatuses.push({ connected, message });
+    },
+
+    async publishSceneEvent(key, data) {
+      if (onPublishSceneEvent) {
+        await onPublishSceneEvent(key, data);
+      }
+      sceneEvents.push({ key, data });
+    },
+
+    requestWidgetRefresh(key) {
+      widgetRefreshes.push(key);
+    },
+
+    async getDevices() {
+      return devices;
     },
   };
 }

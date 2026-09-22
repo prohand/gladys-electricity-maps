@@ -5,6 +5,9 @@ Cette intégration lit **l'intensité carbone du réseau électrique** chez
 sous forme de capteurs, à afficher en graphique et à utiliser dans vos scènes
 pour faire tourner vos appareils quand l'électricité est la plus propre.
 
+Elle fournit aussi un **widget** pour le tableau de bord, un **déclencheur** et
+une **action** pour vos scènes. Elle demande **Gladys 5.1.0 ou plus récent**.
+
 ## Ce que vous obtenez
 
 Un appareil, nommé d'après la zone suivie (par exemple
@@ -95,11 +98,88 @@ La zone fait partie de l'identité de l'appareil : en changer crée un
 **nouvel** appareil. L'ancien n'est plus rafraîchi et peut être supprimé dans
 Gladys.
 
+## Le widget du tableau de bord
+
+Depuis Gladys 5.1, l'intégration ajoute une carte **Carbone du réseau** dans le
+sélecteur de widgets de votre tableau de bord. Elle affiche :
+
+- la **zone** suivie, le **niveau carbone** du moment et l'ancienneté de la
+  dernière mesure ;
+- une tuile par capteur (intensité carbone, part décarbonée et, si votre offre
+  la sert, part renouvelable), mises à jour en direct ;
+- un **graphique** de l'intensité carbone sur les dernières 24 heures ;
+- un bouton **Actualiser** (interroge Electricity Maps tout de suite) et un lien
+  vers la carte en direct de votre zone.
+
+Le graphique et les tuiles en direct s'appuient sur l'appareil : tant que vous
+ne l'avez pas ajouté depuis l'écran **Découverte**, la carte affiche quand même
+les valeurs, sans le graphique, et vous le rappelle.
+
+## Le niveau carbone
+
+L'intensité carbone est un nombre ; le **niveau** est sa lecture en cinq
+paliers, utilisée par le widget et par le déclencheur de scène :
+
+| Niveau      | Intensité carbone    |
+| ----------- | -------------------- |
+| Très faible | < 100 gCO₂eq/kWh     |
+| Faible      | 100 – 200 gCO₂eq/kWh |
+| Modéré      | 200 – 400 gCO₂eq/kWh |
+| Élevé       | 400 – 600 gCO₂eq/kWh |
+| Très élevé  | ≥ 600 gCO₂eq/kWh     |
+
+Les paliers sont fixes et identiques pour toutes les zones : une scène veut dire
+la même chose d'une semaine à l'autre. Une marge de 10 gCO₂eq/kWh empêche une
+valeur posée sur une frontière de faire changer le niveau à chaque mesure.
+
+## Déclencheur de scène
+
+Dans l'éditeur de scènes, catégorie **Intégrations** :
+
+**« Le niveau carbone du réseau a changé »** — se déclenche quand votre zone
+passe d'un palier à un autre. Vous pouvez filtrer :
+
+- sur le **nouveau niveau** (par exemple uniquement « Très faible » et
+  « Faible ») ;
+- sur le **sens** (le réseau devient plus propre, ou plus sale).
+
+Laissez un filtre vide pour réagir à tous les cas.
+
+Il se déclenche **une fois par changement**, pas à chaque rafraîchissement, et
+jamais à la première mesure après un démarrage (rien n'a changé, l'intégration
+vient juste de commencer à regarder).
+
+La scène peut réutiliser les valeurs de l'événement :
+`{{triggerEvent.data.level}}`, `previous_level`, `direction`, `zone`,
+`carbon_intensity`, `carbon_free_percentage`, `renewable_percentage`.
+
+> Pour un simple seuil (« quand l'intensité passe sous 80 »), utilisez le
+> déclencheur standard de Gladys sur la valeur du capteur : c'est fait pour ça.
+> Le déclencheur de l'intégration sert au **changement de palier**, que Gladys
+> ne sait pas exprimer tout seul.
+
+## Action de scène
+
+**« Lire les données carbone du réseau »** — met les valeurs de votre zone à
+disposition des actions suivantes de la scène :
+`zone`, `level`, `carbon_intensity`, `carbon_free_percentage`,
+`renewable_percentage` et `age_seconds` (l'âge de la mesure, en secondes).
+
+Une case **« Interroger Electricity Maps d'abord »**, décochée par défaut,
+force une lecture en direct. Laissez-la décochée dans la plupart des cas : la
+donnée ne bouge qu'environ une fois par heure et les offres gratuites ont un
+quota mensuel de requêtes.
+
 ## Idées de scènes
 
+- Lancer le lave-vaisselle ou charger la voiture quand le niveau carbone passe
+  à « Très faible » ou « Faible » (déclencheur de l'intégration).
 - Lancer le lave-vaisselle ou charger la voiture quand l'intensité carbone
-  passe sous un seuil de votre choix.
+  passe sous un seuil de votre choix (déclencheur standard sur le capteur).
 - Recevoir une notification quand la part décarbonée dépasse 90 %.
+- Envoyer un message contenant l'intensité du moment : action **Lire les
+  données carbone du réseau**, puis une notification utilisant
+  `carbon_intensity`.
 - Superposer votre propre consommation et l'intensité du réseau pour voir le
   coût CO₂ de vos habitudes.
 

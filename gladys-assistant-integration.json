@@ -8,15 +8,10 @@
   },
   "version": "1.0.1",
   "docker_image": "ghcr.io/prohand/gladys-electricity-maps:1.0.1",
-  "gladys_version": ">=4.86.0",
+  "gladys_version": ">=5.1.0",
   "cover_image": "https://raw.githubusercontent.com/prohand/gladys-electricity-maps/main/cover.jpg",
-  "categories": [
-    "energy",
-    "environment"
-  ],
-  "transports": [
-    "cloud"
-  ],
+  "categories": ["energy", "environment"],
+  "transports": ["cloud"],
   "config_schema": [
     {
       "key": "intro",
@@ -106,6 +101,250 @@
         "fr": "Tester la connexion"
       },
       "timeout_seconds": 30
+    }
+  ],
+  "widgets": [
+    {
+      "key": "grid_carbon",
+      "label": {
+        "en": "Grid carbon",
+        "fr": "Carbone du réseau"
+      },
+      "description": {
+        "en": "Carbon intensity of your zone right now, its level and its 24 h history.",
+        "fr": "Intensité carbone de votre zone en ce moment, son niveau et son historique 24 h."
+      },
+      "icon": "zap",
+      "action_timeout_seconds": 60
+    }
+  ],
+  "scene_triggers": [
+    {
+      "key": "carbon_level_changed",
+      "label": {
+        "en": "Grid carbon level changed",
+        "fr": "Le niveau carbone du réseau a changé"
+      },
+      "description": {
+        "en": "The carbon intensity of your zone moved from one level to another. Fires once per change, not on every refresh. Leave the filters empty to react to every change.",
+        "fr": "L'intensité carbone de votre zone est passée d'un niveau à un autre. Se déclenche une fois par changement, pas à chaque rafraîchissement. Laissez les filtres vides pour réagir à tous les changements."
+      },
+      "fields": [
+        {
+          "key": "level",
+          "type": "multi_select",
+          "label": {
+            "en": "New level",
+            "fr": "Nouveau niveau"
+          },
+          "description": {
+            "en": "Only react when the grid reaches one of these levels.",
+            "fr": "Ne réagir que lorsque le réseau atteint l'un de ces niveaux."
+          },
+          "options": [
+            {
+              "value": "very_low",
+              "label": {
+                "en": "Very low (< 100 gCO2eq/kWh)",
+                "fr": "Très faible (< 100 gCO2eq/kWh)"
+              }
+            },
+            {
+              "value": "low",
+              "label": {
+                "en": "Low (100-200 gCO2eq/kWh)",
+                "fr": "Faible (100-200 gCO2eq/kWh)"
+              }
+            },
+            {
+              "value": "moderate",
+              "label": {
+                "en": "Moderate (200-400 gCO2eq/kWh)",
+                "fr": "Modéré (200-400 gCO2eq/kWh)"
+              }
+            },
+            {
+              "value": "high",
+              "label": {
+                "en": "High (400-600 gCO2eq/kWh)",
+                "fr": "Élevé (400-600 gCO2eq/kWh)"
+              }
+            },
+            {
+              "value": "very_high",
+              "label": {
+                "en": "Very high (> 600 gCO2eq/kWh)",
+                "fr": "Très élevé (> 600 gCO2eq/kWh)"
+              }
+            }
+          ]
+        },
+        {
+          "key": "direction",
+          "type": "multi_select",
+          "label": {
+            "en": "Direction",
+            "fr": "Sens"
+          },
+          "description": {
+            "en": "Only react when the grid gets cleaner, or only when it gets dirtier.",
+            "fr": "Ne réagir que lorsque le réseau devient plus propre, ou seulement plus sale."
+          },
+          "options": [
+            {
+              "value": "cleaner",
+              "label": {
+                "en": "The grid got cleaner",
+                "fr": "Le réseau est devenu plus propre"
+              }
+            },
+            {
+              "value": "dirtier",
+              "label": {
+                "en": "The grid got dirtier",
+                "fr": "Le réseau est devenu plus sale"
+              }
+            }
+          ]
+        }
+      ],
+      "variables": [
+        {
+          "key": "zone",
+          "type": "string",
+          "label": {
+            "en": "Zone",
+            "fr": "Zone"
+          }
+        },
+        {
+          "key": "level",
+          "type": "string",
+          "label": {
+            "en": "New level",
+            "fr": "Nouveau niveau"
+          }
+        },
+        {
+          "key": "previous_level",
+          "type": "string",
+          "label": {
+            "en": "Previous level",
+            "fr": "Niveau précédent"
+          }
+        },
+        {
+          "key": "direction",
+          "type": "string",
+          "label": {
+            "en": "Direction",
+            "fr": "Sens"
+          }
+        },
+        {
+          "key": "carbon_intensity",
+          "type": "number",
+          "label": {
+            "en": "Carbon intensity (gCO2eq/kWh)",
+            "fr": "Intensité carbone (gCO2eq/kWh)"
+          }
+        },
+        {
+          "key": "carbon_free_percentage",
+          "type": "number",
+          "label": {
+            "en": "Carbon-free electricity (%)",
+            "fr": "Électricité décarbonée (%)"
+          }
+        },
+        {
+          "key": "renewable_percentage",
+          "type": "number",
+          "label": {
+            "en": "Renewable electricity (%)",
+            "fr": "Électricité renouvelable (%)"
+          }
+        }
+      ]
+    }
+  ],
+  "scene_actions": [
+    {
+      "key": "get_grid_data",
+      "label": {
+        "en": "Get the grid carbon data",
+        "fr": "Lire les données carbone du réseau"
+      },
+      "description": {
+        "en": "Hands the latest reading of your zone to the next actions of the scene.",
+        "fr": "Transmet la dernière mesure de votre zone aux actions suivantes de la scène."
+      },
+      "timeout_seconds": 60,
+      "fields": [
+        {
+          "key": "refresh",
+          "type": "boolean",
+          "label": {
+            "en": "Read Electricity Maps first",
+            "fr": "Interroger Electricity Maps d'abord"
+          },
+          "description": {
+            "en": "Off: use the last value read by the integration, which costs no API request. On: read the API now — the data only changes about once an hour, and free plans have a monthly request quota.",
+            "fr": "Désactivé : utiliser la dernière valeur lue par l'intégration, sans requête API. Activé : interroger l'API maintenant — les données ne changent qu'environ une fois par heure, et les offres gratuites ont un quota mensuel de requêtes."
+          },
+          "default": false
+        }
+      ],
+      "outputs": [
+        {
+          "key": "zone",
+          "type": "string",
+          "label": {
+            "en": "Zone",
+            "fr": "Zone"
+          }
+        },
+        {
+          "key": "level",
+          "type": "string",
+          "label": {
+            "en": "Carbon level",
+            "fr": "Niveau carbone"
+          }
+        },
+        {
+          "key": "carbon_intensity",
+          "type": "number",
+          "label": {
+            "en": "Carbon intensity (gCO2eq/kWh)",
+            "fr": "Intensité carbone (gCO2eq/kWh)"
+          }
+        },
+        {
+          "key": "carbon_free_percentage",
+          "type": "number",
+          "label": {
+            "en": "Carbon-free electricity (%)",
+            "fr": "Électricité décarbonée (%)"
+          }
+        },
+        {
+          "key": "renewable_percentage",
+          "type": "number",
+          "label": {
+            "en": "Renewable electricity (%)",
+            "fr": "Électricité renouvelable (%)"
+          }
+        },
+        {
+          "key": "age_seconds",
+          "type": "number",
+          "label": {
+            "en": "Age of the reading (s)",
+            "fr": "Âge de la mesure (s)"
+          }
+        }
+      ]
     }
   ]
 }
