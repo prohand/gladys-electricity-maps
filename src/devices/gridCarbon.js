@@ -220,8 +220,11 @@ export const gridCarbon = {
     };
 
     if (status.status === 'fulfilled') {
-      const { carbonIntensity, fossilFreePercentage } = status.value;
-      logger.info(`Carbon intensity: ${carbonIntensity} gCO₂eq/kWh`);
+      const { carbonIntensity, fossilFreePercentage, datetime } = status.value;
+      // The hour of the value, to compare it with the right point of the
+      // Electricity Maps site (hourly here, 15-minute points over there).
+      const at = datetime ? ` (hourly value of ${datetime})` : '';
+      logger.info(`Carbon intensity: ${carbonIntensity} gCO₂eq/kWh${at}`);
       logger.info(`Carbon-free: ${fossilFreePercentage}%`);
       values.carbonIntensity = carbonIntensity;
       values.carbonFreePercentage = fossilFreePercentage;

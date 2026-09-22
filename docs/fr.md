@@ -219,6 +219,23 @@ quota mensuel de requêtes.
 | `quota exceeded (HTTP 429)`        | Augmentez l'intervalle, ou attendez la remise à zéro du quota        |
 | `Electricity Maps unreachable`     | Problème réseau ou DNS sur l'hôte Gladys                             |
 
+### La valeur n'est pas la même que sur le site Electricity Maps
+
+C'est normal, les deux ne mesurent pas la même chose :
+
+- **L'intégration lit une valeur par heure.** La clé gratuite n'a accès qu'à
+  `/v3/home-assistant`, qui renvoie la moyenne de l'heure en cours (souvent
+  une estimation).
+- **Le site affiche des points toutes les 5 ou 15 minutes**, marqués
+  « Préliminaires ». Quand l'intensité baisse ou monte vite, un point de
+  22:45 peut être loin de la valeur horaire.
+- **Les données sont revues ensuite.** Les valeurs estimées puis
+  préliminaires sont corrigées par Electricity Maps au fil des heures.
+
+Pour comparer, prenez la même heure : les logs donnent l'heure de la valeur
+lue (`Carbon intensity: 66 gCO₂eq/kWh (hourly value of 2026-09-22T20:00:00.000Z)`,
+heure UTC), et sur le site passez la granularité en **horaire**.
+
 ### Les capteurs restent affichés en « Inconnu »
 
 Deux causes possibles :

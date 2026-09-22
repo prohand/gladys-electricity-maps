@@ -47,8 +47,11 @@ export class ElectricityMapsError extends Error {
  * `fossilFuelPercentage` is turned into its complement: the carbon-free share
  * (renewables + nuclear) is the value the integration publishes, and it is the
  * same quantity as the `fossilFreePercentage` of the power breakdown.
+ * `datetime` is the hour the figures belong to: the endpoint serves HOURLY
+ * values, while the Electricity Maps site draws 5 or 15-minute points, so the
+ * two only match when compared at the same hour.
  * @param {{ api_token: string, zone: string }} config
- * @returns {Promise<{ carbonIntensity: number|null, fossilFreePercentage: number|null }>}
+ * @returns {Promise<{ carbonIntensity: number|null, fossilFreePercentage: number|null, datetime: string|null }>}
  */
 export async function fetchGridStatus({ api_token: apiToken, zone }) {
   const body = await request('/home-assistant', { apiToken, zone });
@@ -66,6 +69,7 @@ export async function fetchGridStatus({ api_token: apiToken, zone }) {
   return {
     carbonIntensity: toNumber(data.carbonIntensity),
     fossilFreePercentage: fossilFuelPercentage === null ? null : round1(100 - fossilFuelPercentage),
+    datetime: data.datetime ?? body.datetime ?? null,
   };
 }
 
