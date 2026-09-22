@@ -6,12 +6,17 @@
     "en": "Live carbon intensity and carbon-free share of your electricity grid.",
     "fr": "Intensité carbone et part d'électricité décarbonée de votre réseau."
   },
-  "version": "2.0.0",
-  "docker_image": "ghcr.io/prohand/gladys-electricity-maps:2.0.0",
+  "version": "2.0.1",
+  "docker_image": "ghcr.io/prohand/gladys-electricity-maps:2.0.1",
   "gladys_version": ">=5.1.0",
   "cover_image": "https://raw.githubusercontent.com/prohand/gladys-electricity-maps/main/cover.jpg",
-  "categories": ["energy", "environment"],
-  "transports": ["cloud"],
+  "categories": [
+    "energy",
+    "environment"
+  ],
+  "transports": [
+    "cloud"
+  ],
   "config_schema": [
     {
       "key": "intro",
