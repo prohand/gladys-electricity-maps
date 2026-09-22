@@ -25,7 +25,7 @@
 
 import { classifyCarbonIntensity } from './carbonLevel.js';
 
-/** @typedef {{ zone: string, level: string|null, previousLevel: string|null, at: number, carbonIntensity: number|null, carbonFreePercentage: number|null, renewablePercentage: number|null }} GridSnapshot */
+/** @typedef {{ zone: string, level: string|null, previousLevel: string|null, at: number, valueAt: number|null, carbonIntensity: number|null, carbonFreePercentage: number|null, renewablePercentage: number|null }} GridSnapshot */
 
 let snapshot = null;
 let snapshotKey = null;
@@ -44,8 +44,12 @@ function keyOf({ api_token: apiToken, zone }) {
  * breakdown answered) keeps the level it had: the level did not become
  * unknown, we just did not measure it this time.
  *
+ * `at` is when the poll ran, `valueAt` the hour the figures belong to, as the
+ * API dates them (null when it sends no date). They differ: the API serves
+ * HOURLY values, so a poll at 20:47 reads the value of the 20:00 hour.
+ *
  * @param {{ api_token: string, zone: string }} config
- * @param {{ carbonIntensity: number|null, carbonFreePercentage: number|null, renewablePercentage: number|null }} values
+ * @param {{ carbonIntensity: number|null, carbonFreePercentage: number|null, renewablePercentage: number|null, datetime?: string|null }} values
  * @returns {GridSnapshot} the snapshot just stored
  */
 export function rememberGridSnapshot(config, values) {
@@ -60,6 +64,7 @@ export function rememberGridSnapshot(config, values) {
     level,
     previousLevel,
     at: Date.now(),
+    valueAt: toTimestamp(values.datetime),
     carbonIntensity: values.carbonIntensity ?? null,
     carbonFreePercentage: values.carbonFreePercentage ?? null,
     renewablePercentage: values.renewablePercentage ?? null,
@@ -80,6 +85,12 @@ export function readGridSnapshot(config) {
 /** How old a snapshot is, in whole seconds. */
 export function gridSnapshotAgeSeconds({ at }) {
   return Math.max(0, Math.round((Date.now() - at) / 1000));
+}
+
+/** An ISO date as a timestamp, or null when missing or unreadable. */
+function toTimestamp(datetime) {
+  const time = datetime ? new Date(datetime).getTime() : NaN;
+  return Number.isNaN(time) ? null : time;
 }
 
 /** Forget everything: only used to isolate the tests from one another. */

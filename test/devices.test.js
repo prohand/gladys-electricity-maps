@@ -50,8 +50,8 @@ function stubApi({ status, breakdown }) {
 }
 
 /** Body of /v3/home-assistant for the given values. */
-function gridStatus({ carbonIntensity = 57, fossilFuelPercentage = 8 } = {}) {
-  return { status: 'ok', data: { carbonIntensity, fossilFuelPercentage } };
+function gridStatus({ carbonIntensity = 57, fossilFuelPercentage = 8, datetime } = {}) {
+  return { status: 'ok', data: { carbonIntensity, fossilFuelPercentage, datetime } };
 }
 
 test('every blueprint exposes the required shape', () => {
@@ -506,13 +506,18 @@ test('a poll records what it read, for the widget and the scene action', async (
   resetGridSnapshot();
 
   stubApi({
-    status: gridStatus({ carbonIntensity: 210, fossilFuelPercentage: 30 }),
+    status: gridStatus({
+      carbonIntensity: 210,
+      fossilFuelPercentage: 30,
+      datetime: '2026-09-22T20:00:00.000Z',
+    }),
     breakdown: { fossilFreePercentage: 70, renewablePercentage: 24 },
   });
   await bp.onPoll(gladys, zoneConfig);
 
   const snapshot = readGridSnapshot(zoneConfig);
   assert.equal(snapshot.zone, 'BE');
+  assert.equal(snapshot.valueAt, Date.parse('2026-09-22T20:00:00.000Z'), 'the hour of the value');
   assert.equal(snapshot.carbonIntensity, 210);
   assert.equal(snapshot.carbonFreePercentage, 70);
   assert.equal(snapshot.renewablePercentage, 24);

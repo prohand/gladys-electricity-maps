@@ -186,6 +186,34 @@ test('the status row carries what no device feature holds', async () => {
   assert.equal(values[2].en, 'just now', 'the freshness of the reading');
 });
 
+test('the status row says which hour the value belongs to, not when it was polled', async () => {
+  const gladys = gladysWith({ deviceCreated: true });
+  const hour = 3600 * 1000;
+  const startOfHour = (ms) => new Date(Math.floor(ms / hour) * hour).toISOString();
+  const cases = [
+    [startOfHour(Date.now()), 'heure en cours'],
+    [startOfHour(Date.now() - hour), 'heure précédente'],
+    [startOfHour(Date.now() - 3 * hour), 'il y a 3 h'],
+  ];
+  for (const [datetime, expected] of cases) {
+    read({ datetime });
+    const content = await widget.get(gladys, { config });
+    const status = content.components.find((component) => component.type === 'status');
+    assert.equal(status.items[2].label.fr, 'Valeur horaire');
+    assert.equal(status.items[2].value.fr, expected, `value of ${datetime}`);
+    assert.deepEqual(validateWidgetContent(content), []);
+  }
+});
+
+test('without a date from the API, the status row falls back to the age of the poll', async () => {
+  read({ datetime: null });
+  const gladys = gladysWith({ deviceCreated: true });
+  const content = await widget.get(gladys, { config });
+  const status = content.components.find((component) => component.type === 'status');
+  assert.equal(status.items[2].label.fr, 'Dernière mesure');
+  assert.equal(status.items[2].value.fr, "à l'instant");
+});
+
 test('the card is re-pulled at the pace of the refresh loop', async () => {
   read();
   const gladys = gladysWith({ deviceCreated: true });

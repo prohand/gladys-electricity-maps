@@ -68,8 +68,9 @@ asks for one.
 
 One card, built around the device once the user created it:
 
-- a **status** block with the zone, the carbon **level** and the age of the
-  reading — the three things no device feature holds;
+- a **status** block with the zone, the carbon **level** and the hour the
+  value belongs to (the API serves hourly values, so the hour of the value,
+  not the time of the poll) — the three things no device feature holds;
 - **live tiles** bound to the features (`device_feature`), so they follow the
   published states instead of the content TTL;
 - a **chart** bound to the carbon intensity feature over the last 24 h, so the
