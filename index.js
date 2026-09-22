@@ -8,6 +8,12 @@
 //   2. registers the event handlers BEFORE connect();
 //   3. connects and publishes the discovered devices.
 //
+// Since Gladys 5.1 the same wiring also carries the three surfaces an external
+// integration may declare in its manifest: the dashboard WIDGETS
+// (src/widgets.js), the scene ACTIONS (src/scenes.js) and the scene TRIGGERS,
+// fired from where the data is read (src/devices/gridCarbon.js). They are
+// registered like everything else here: one loop per manifest field, no logic.
+//
 // Environment variables provided by the Gladys supervisor to the container:
 //   - GLADYS_HOST_API_URL         (host API URL)
 //   - GLADYS_INTEGRATION_TOKEN    (integration-scoped JWT)
@@ -24,6 +30,8 @@ import {
   publishDevices,
   findBlueprintByDevice,
 } from './src/devices/index.js';
+import { SCENE_ACTIONS } from './src/scenes.js';
+import { WIDGETS } from './src/widgets.js';
 
 const gladys = new GladysIntegration();
 
@@ -126,6 +134,18 @@ async function refreshAllDevices() {
       logger.error('Re-publishing the devices failed', err);
     });
   }
+  // The device-bound tiles and the chart follow the published states on their
+  // own; what the widget adds (the zone, the carbon level, the age of the
+  // reading) lives in its content, so the card is asked to re-pull it. Purely a
+  // nudge: rate-limited by the core, dropped while disconnected.
+  nudgeWidgets();
+}
+
+/** Ask the core to re-pull every declared widget ("re-pull me now"). */
+function nudgeWidgets() {
+  for (const key of Object.keys(WIDGETS)) {
+    gladys.requestWidgetRefresh(key);
+  }
 }
 
 // --- Manifest actions: buttons in the Configuration screen -------------------
@@ -136,6 +156,35 @@ for (const blueprint of DEVICE_BLUEPRINTS) {
   for (const [actionKey, handler] of Object.entries(blueprint.actions ?? {})) {
     gladys.onAction(actionKey, (fields) => handler(gladys, { fields, config }));
   }
+}
+
+// --- Scene actions: cards of the scene editor --------------------------------
+// Declared in the `scene_actions` field of the manifest and registered per key.
+// The resolved outputs are handed to the following actions of the scene; a
+// throw fails that action only, the scene continues.
+for (const [actionKey, handler] of Object.entries(SCENE_ACTIONS)) {
+  gladys.onSceneAction(actionKey, (fields) => handler(gladys, { fields, config, refresh }));
+}
+
+// --- Dashboard widgets -------------------------------------------------------
+// Declared in the `widgets` field of the manifest. Gladys PULLS the content
+// when a dashboard shows the card (and caches it for the `ttl_seconds` the
+// content declares), and relays the buttons carrying an action.
+for (const [widgetKey, widget] of Object.entries(WIDGETS)) {
+  gladys.onWidgetGet(widgetKey, () => widget.get(gladys, { config }));
+  gladys.onWidgetAction(widgetKey, (actionKey) =>
+    widget.action(gladys, { actionKey, config, refresh }),
+  );
+}
+
+/**
+ * Read Electricity Maps now, outside the refresh schedule: what a scene action
+ * asking for fresh values and the widget's Refresh button both need. It is the
+ * same tick as the loop's, so two of them never overlap and burn the quota
+ * twice.
+ */
+async function refresh() {
+  await poller.refreshNow();
 }
 
 // --- Configuration updated by the user ---------------------------------------

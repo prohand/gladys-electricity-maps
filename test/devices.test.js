@@ -13,6 +13,9 @@ import {
   GRID_CARBON_TYPES,
 } from '../src/features.js';
 import { normalizeConfig } from '../src/config.js';
+import { CARBON_LEVELS } from '../src/carbonLevel.js';
+import { readGridSnapshot, resetGridSnapshot } from '../src/gridSnapshot.js';
+import { SCENE_TRIGGERS } from '../src/scenes.js';
 import { createFakeGladys } from './helpers/fakeGladys.js';
 
 const realFetch = globalThis.fetch;
@@ -492,4 +495,66 @@ test('a refusal discovered by a poll changes what the devices advertise', async 
 
   assert.equal(capabilitiesSignature(lateConfig), 'grid-carbon=no-renewable');
   assert.equal(buildDiscoveredDevices(gladys, lateConfig)[0].features.length, 2);
+});
+
+// --- What a poll hands over to the widget and to the scenes ------------------
+
+test('a poll records what it read, for the widget and the scene action', async () => {
+  const gladys = createFakeGladys();
+  const [bp] = DEVICE_BLUEPRINTS;
+  const zoneConfig = normalizeConfig({ api_token: 'snapshot-token', zone: 'BE' });
+  resetGridSnapshot();
+
+  stubApi({
+    status: gridStatus({ carbonIntensity: 210, fossilFuelPercentage: 30 }),
+    breakdown: { fossilFreePercentage: 70, renewablePercentage: 24 },
+  });
+  await bp.onPoll(gladys, zoneConfig);
+
+  const snapshot = readGridSnapshot(zoneConfig);
+  assert.equal(snapshot.zone, 'BE');
+  assert.equal(snapshot.carbonIntensity, 210);
+  assert.equal(snapshot.carbonFreePercentage, 70);
+  assert.equal(snapshot.renewablePercentage, 24);
+  assert.equal(snapshot.level, CARBON_LEVELS.MODERATE);
+});
+
+test('a poll that changes the level fires the scene trigger, after the states', async () => {
+  const gladys = createFakeGladys();
+  const [bp] = DEVICE_BLUEPRINTS;
+  const zoneConfig = normalizeConfig({ api_token: 'trigger-token', zone: 'NL' });
+  resetGridSnapshot();
+
+  stubApi({ status: gridStatus({ carbonIntensity: 60 }), breakdown: 401 });
+  await bp.onPoll(gladys, zoneConfig);
+  assert.deepEqual(gladys.sceneEvents, [], 'the first reading is not a transition');
+
+  stubApi({ status: gridStatus({ carbonIntensity: 480 }), breakdown: 401 });
+  await bp.onPoll(gladys, zoneConfig);
+
+  assert.equal(gladys.sceneEvents.length, 1);
+  assert.equal(gladys.sceneEvents[0].key, SCENE_TRIGGERS.CARBON_LEVEL_CHANGED);
+  assert.equal(gladys.sceneEvents[0].data.level, CARBON_LEVELS.HIGH);
+  const ids = gladys.externalIds('grid-carbon', 'NL');
+  assert.deepEqual(
+    gladys.published.filter((p) => p.featureExternalId === ids.feature('carbon-intensity')),
+    [
+      { featureExternalId: ids.feature('carbon-intensity'), state: 60 },
+      { featureExternalId: ids.feature('carbon-intensity'), state: 480 },
+    ],
+    'the states are published before the event describing them',
+  );
+});
+
+test('a poll that read nothing records nothing', async () => {
+  const gladys = createFakeGladys();
+  const [bp] = DEVICE_BLUEPRINTS;
+  const zoneConfig = normalizeConfig({ api_token: 'dead-token', zone: 'PT' });
+  resetGridSnapshot();
+
+  stubApi({ status: new Error('down'), breakdown: 401 });
+  await assert.rejects(() => bp.onPoll(gladys, zoneConfig));
+
+  assert.equal(readGridSnapshot(zoneConfig), null, 'no reading, no snapshot to serve');
+  assert.deepEqual(gladys.sceneEvents, []);
 });

@@ -5,6 +5,9 @@ This integration reads the **carbon intensity of the electricity grid** from
 sensors you can chart, and use in scenes to run your appliances when the
 electricity is cleanest.
 
+It also ships a dashboard **widget**, a scene **trigger** and a scene
+**action**. It requires **Gladys 5.1.0 or later**.
+
 ## What you get
 
 One device, named after the zone you follow (for example
@@ -90,11 +93,84 @@ The zone is part of the device identity: switching to another zone creates a
 **new** device. The old one stops being refreshed and can be deleted from
 Gladys.
 
+## The dashboard widget
+
+Since Gladys 5.1 the integration adds a **Grid carbon** card to the widget
+picker of your dashboard. It shows:
+
+- the **zone** you follow, the current **carbon level** and how old the last
+  reading is;
+- one tile per sensor (carbon intensity, carbon-free share and, if your plan
+  serves it, renewable share), updated live;
+- a **chart** of the carbon intensity over the last 24 hours;
+- a **Refresh** button (reads Electricity Maps right away) and a link to the
+  live map of your zone.
+
+The chart and the live tiles rely on the device: until you add it from the
+**Discovery** screen, the card still shows the values, without the chart, and
+tells you so.
+
+## The carbon level
+
+The carbon intensity is a number; the **level** is its reading on five bands,
+used by the widget and by the scene trigger:
+
+| Level     | Carbon intensity     |
+| --------- | -------------------- |
+| Very low  | < 100 gCO₂eq/kWh     |
+| Low       | 100 – 200 gCO₂eq/kWh |
+| Moderate  | 200 – 400 gCO₂eq/kWh |
+| High      | 400 – 600 gCO₂eq/kWh |
+| Very high | ≥ 600 gCO₂eq/kWh     |
+
+The bands are fixed and the same for every zone: a scene means the same thing
+from one week to the next. A margin of 10 gCO₂eq/kWh keeps a value sitting on a
+boundary from changing the level on every reading.
+
+## Scene trigger
+
+In the scene editor, under the **Integrations** category:
+
+**"Grid carbon level changed"** — runs when your zone moves from one band to
+another. You can filter:
+
+- on the **new level** (for example only "Very low" and "Low");
+- on the **direction** (the grid got cleaner, or got dirtier).
+
+Leave a filter empty to react to every case.
+
+It fires **once per change**, not on every refresh, and never on the first
+reading after a restart (nothing changed, the integration just started
+looking).
+
+The scene can reuse the values of the event: `{{triggerEvent.data.level}}`,
+`previous_level`, `direction`, `zone`, `carbon_intensity`,
+`carbon_free_percentage`, `renewable_percentage`.
+
+> For a plain threshold ("when the intensity drops below 80"), use the standard
+> Gladys trigger on the sensor value: that is what it is for. The integration's
+> trigger is about the **band change**, which Gladys cannot express on its own.
+
+## Scene action
+
+**"Get the grid carbon data"** — makes the values of your zone available to the
+following actions of the scene: `zone`, `level`, `carbon_intensity`,
+`carbon_free_percentage`, `renewable_percentage` and `age_seconds` (the age of
+the reading, in seconds).
+
+A **"Read Electricity Maps first"** checkbox, off by default, forces a live
+read. Leave it off in most cases: the data only moves about once an hour, and
+free plans have a monthly request quota.
+
 ## Ideas of scenes
 
+- Start the dishwasher or charge the car when the carbon level reaches "Very
+  low" or "Low" (the integration's trigger).
 - Start the dishwasher or charge the car when the carbon intensity drops below
-  a threshold you choose.
+  a threshold you choose (the standard trigger on the sensor).
 - Send yourself a notification when the carbon-free share goes above 90 %.
+- Send a message carrying the current intensity: the **Get the grid carbon
+  data** action, then a notification using `carbon_intensity`.
 - Chart your own consumption next to the grid intensity to see the CO₂ cost of
   your habits.
 

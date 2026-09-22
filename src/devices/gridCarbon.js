@@ -20,6 +20,13 @@
 // recent value" forever. The probe payload is reused by the poll that follows,
 // so the check costs no extra request.
 //
+// Beyond the sensors, this device feeds the three surfaces Gladys 5.1 opened to
+// external integrations: the dashboard WIDGET (src/widgets.js), the scene
+// ACTION (src/scenes.js) and the scene TRIGGER `carbon_level_changed`, fired
+// from here because this is where the values are read. All three share the last
+// reading through src/gridSnapshot.js, so none of them costs an extra API
+// request.
+//
 // The states published before the user actually creates the device are lost
 // (Gladys has nowhere to store them yet), so the last batch is kept in memory
 // and replayed by `onDeviceCreated`: the device shows its values immediately
@@ -34,6 +41,8 @@ import {
   GRID_CARBON_TYPES,
 } from '../features.js';
 import { fetchGridStatus, fetchPowerBreakdown } from '../electricityMaps.js';
+import { rememberGridSnapshot } from '../gridSnapshot.js';
+import { publishCarbonLevelEvent } from '../scenes.js';
 
 const DEVICE_TYPE = 'grid-carbon';
 
@@ -61,6 +70,21 @@ export const gridCarbon = {
   // yields a different device, which is the expected behaviour.
   deviceExternalId(gladys, config) {
     return gladys.externalIds(DEVICE_TYPE, config.zone).device;
+  },
+
+  /**
+   * External ids of the features the device publishes, for the surfaces that
+   * bind to them without going through the discovery payload (the dashboard
+   * widget). `renewable` is null while the plan refuses the power breakdown:
+   * that feature is not published either, so nothing may point at it.
+   */
+  featureExternalIds(gladys, config) {
+    const ids = gladys.externalIds(DEVICE_TYPE, config.zone);
+    return {
+      carbonIntensity: ids.feature(FEATURE.CARBON_INTENSITY),
+      carbonFree: ids.feature(FEATURE.CARBON_FREE),
+      renewable: isPowerBreakdownAllowed(config) ? ids.feature(FEATURE.RENEWABLE) : null,
+    };
   },
 
   buildDevice(gladys, config) {
@@ -186,11 +210,21 @@ export const gridCarbon = {
     const breakdown = probed ? { status: 'fulfilled', value: probed } : polledBreakdown;
 
     const states = [];
+    // The same figures, kept aside for the widget, the scene action and the
+    // scene trigger: they all read the last measurement instead of paying for
+    // one of their own (see src/gridSnapshot.js).
+    const values = {
+      carbonIntensity: null,
+      carbonFreePercentage: null,
+      renewablePercentage: null,
+    };
 
     if (status.status === 'fulfilled') {
       const { carbonIntensity, fossilFreePercentage } = status.value;
       logger.info(`Carbon intensity: ${carbonIntensity} gCO₂eq/kWh`);
       logger.info(`Carbon-free: ${fossilFreePercentage}%`);
+      values.carbonIntensity = carbonIntensity;
+      values.carbonFreePercentage = fossilFreePercentage;
       pushState(states, ids.feature(FEATURE.CARBON_INTENSITY), carbonIntensity);
       pushState(states, ids.feature(FEATURE.CARBON_FREE), fossilFreePercentage);
     } else {
@@ -202,9 +236,11 @@ export const gridCarbon = {
       logger.info(`Renewable: ${renewablePercentage}%`);
       // The plan does serve it: keep the sensor advertised.
       rememberPowerBreakdownAllowed(config);
+      values.renewablePercentage = renewablePercentage;
       pushState(states, ids.feature(FEATURE.RENEWABLE), renewablePercentage);
       if (status.status !== 'fulfilled') {
         // The grid status is down but the breakdown carries the same share.
+        values.carbonFreePercentage = fossilFreePercentage;
         pushState(states, ids.feature(FEATURE.CARBON_FREE), fossilFreePercentage);
       }
     } else if (breakdown) {
@@ -220,6 +256,13 @@ export const gridCarbon = {
     // Publish every value in a single request (batch, up to 100).
     await gladys.publishStates(states);
     rememberStates(config, states);
+
+    // The states are safe: now tell the rest of the integration what was read,
+    // and fire the scene trigger when the grid actually changed level. The
+    // event is published AFTER the states so a scene reading the sensors right
+    // away sees the values the event describes.
+    const snapshot = rememberGridSnapshot(config, values);
+    await publishCarbonLevelEvent(gladys, snapshot);
   },
 
   /**
