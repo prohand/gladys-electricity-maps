@@ -71,6 +71,13 @@ jobs:
             gladys-assistant-integration.json > "$tmp"
           mv "$tmp" gladys-assistant-integration.json
 
+          # jq re-prints the whole document with its own layout, which is not
+          # Prettier's: without this the release commit lands on main with a
+          # failing `format:check`. Reformat what jq just wrote, with the Prettier
+          # version the project pins.
+          npx --yes "prettier@$(node -p "require('./package.json').devDependencies.prettier")" \
+            --write gladys-assistant-integration.json
+
           echo "version=${new_version}" >> "$GITHUB_OUTPUT"
 
       # Note: if the branch you release from is protected against direct pushes,

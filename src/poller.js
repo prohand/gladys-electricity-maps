@@ -23,20 +23,27 @@ export function createPoller(refresh) {
   let intervalSeconds = null;
   // A slow API answer must not let two refreshes overlap and burn the quota
   // twice: a tick landing while the previous one still runs is dropped.
-  let inFlight = false;
+  let inFlight = null;
+  // A refresh asked while another one runs (a new token, a scene, the widget
+  // button): one follow-up read, shared by every caller that asked meanwhile.
+  let followUp = null;
 
   async function tick() {
     if (inFlight) {
       logger.warn('Previous refresh still running, skipping this tick');
       return;
     }
-    inFlight = true;
+    inFlight = (async () => {
+      try {
+        await refresh();
+      } catch (err) {
+        logger.error('Scheduled refresh failed', err);
+      }
+    })();
     try {
-      await refresh();
-    } catch (err) {
-      logger.error('Scheduled refresh failed', err);
+      await inFlight;
     } finally {
-      inFlight = false;
+      inFlight = null;
     }
   }
 
@@ -68,7 +75,22 @@ export function createPoller(refresh) {
      * next tick would leave the user in front of stale or empty values.
      */
     async refreshNow() {
-      await tick();
+      if (!inFlight) {
+        await tick();
+        return;
+      }
+      // The running read may predate what the caller just changed (a new
+      // token or zone) or wants (fresh values): skipping it, as a scheduled
+      // tick does, left stale values until the next tick. Read once more
+      // right after it instead.
+      followUp ??= (async () => {
+        while (inFlight) {
+          await inFlight;
+        }
+        followUp = null;
+        await tick();
+      })();
+      await followUp;
     },
 
     stop() {

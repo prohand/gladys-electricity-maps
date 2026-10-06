@@ -322,7 +322,7 @@ function takeFreshStates(config) {
 let powerBreakdownPlan = { key: null, allowed: null };
 
 function planKey({ api_token: apiToken, zone }) {
-  return `${zone} ${apiToken}`;
+  return `${zone}\u0000${apiToken}`;
 }
 
 /** Plan state of this token+zone, reset as soon as either one changed. */

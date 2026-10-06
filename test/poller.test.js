@@ -185,3 +185,24 @@ test('sync reports whether it restarted the loop', async () => {
     poller.stop();
   });
 });
+
+test('refreshNow during a running refresh reads once more right after it', async () => {
+  let calls = 0;
+  let release;
+  const poller = createPoller(async () => {
+    calls += 1;
+    if (calls === 1) {
+      await new Promise((resolve) => {
+        release = resolve;
+      });
+    }
+  });
+  const running = poller.refreshNow();
+  await Promise.resolve();
+  // A new token is saved while the first read is still waiting on the API.
+  const first = poller.refreshNow();
+  const second = poller.refreshNow();
+  release();
+  await Promise.all([running, first, second]);
+  assert.equal(calls, 2, 'one follow-up read, shared by both callers');
+});

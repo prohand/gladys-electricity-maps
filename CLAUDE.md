@@ -62,8 +62,8 @@ src/widgets.js            dashboard widget (tiles coloured after what they read)
 - **Every feature declares `min`/`max`** (NOT NULL in Gladys).
 - **Scene trigger `carbon_level_changed` fires on a transition** of the carbon level, never on
   the first reading. Widget, trigger and action keys are stored by users: never rename them.
-- `src/devices/gridCarbon.js` uses a raw NUL character as separator in `planKey()`, which makes
-  git and grep treat the file as binary; prefer an escape sequence when touching it.
+- **A refresh asked during a running one is not dropped** (`poller.refreshNow()`): it reads once
+  more right after, shared by every caller that asked meanwhile. Scheduled ticks still skip.
 
 ### Manifest
 
