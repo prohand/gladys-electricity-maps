@@ -121,13 +121,16 @@ async function refreshAllDevices() {
   // before publishing could not settle it (a network error, a token pasted
   // before the integration was reachable).
   const advertisedBefore = capabilitiesSignature(config);
+  let failure = null;
   for (const blueprint of DEVICE_BLUEPRINTS) {
     try {
       await blueprint.onPoll(gladys, config);
     } catch (err) {
       logger.error(`Refresh of ${blueprint.key} failed`, err);
+      failure ??= err;
     }
   }
+  await reportRefreshStatus(failure);
   if (capabilitiesSignature(config) !== advertisedBefore) {
     logger.info('The refresh changed what the devices can publish -> re-publishing them');
     await publishDevices(gladys, config).catch((err) => {
@@ -219,6 +222,8 @@ gladys.on('connected', async () => {
   try {
     // 1) Fetch the config filled in by the user.
     config = normalizeConfig(await gladys.getConfig());
+    // A Gladys that restarted holds no status of ours: write it again.
+    lastStatus = null;
 
     // 2) (Re)publish the devices as soon as we are connected. A configuration
     // still empty publishes nothing: step 3 tells the user why.
@@ -251,10 +256,61 @@ gladys.on('connected', async () => {
 async function reportConfigurationStatus() {
   if (!isConfigured(config)) {
     logger.warn('No API token or zone configured yet');
-    await gladys.setConnectionStatus(false, NOT_CONFIGURED_MESSAGE);
+    await setStatus(false, NOT_CONFIGURED_MESSAGE);
     return;
   }
-  await gladys.setConnectionStatus(true);
+  await setStatus(true);
+}
+
+/**
+ * Say in the Configuration screen whether the last refresh worked. It used to
+ * stay green as soon as a token and a zone were filled in, so a revoked token
+ * or a zone the plan does not cover failed every tick with nothing but log
+ * lines to show for it.
+ * @param {Error|null} failure - The first error of the tick, or null.
+ * @returns {Promise<void>} Resolves once the status is stored, if it changed.
+ */
+async function reportRefreshStatus(failure) {
+  if (!failure) {
+    await setStatus(true);
+    return;
+  }
+  const reason = String(failure.message ?? failure).slice(0, 150);
+  const refused = failure.status === 401 || failure.status === 403;
+  await setStatus(
+    false,
+    refused
+      ? {
+          en: `Electricity Maps refused the API token or the zone: ${reason}`,
+          fr: `Electricity Maps a refusé le token API ou la zone : ${reason}`,
+        }
+      : {
+          en: `The last refresh failed: ${reason}`,
+          fr: `La dernière lecture a échoué : ${reason}`,
+        },
+  );
+}
+
+// Last status written, so a refresh every few minutes does not write the same
+// status again each time.
+let lastStatus = null;
+
+/**
+ * Write the connection status when it changed.
+ * @param {boolean} connected - Whether the integration works.
+ * @param {{en: string, fr: string}} [message] - Why not.
+ * @returns {Promise<void>} Resolves once Gladys stored it.
+ */
+async function setStatus(connected, message) {
+  const signature = JSON.stringify([connected, message ?? null]);
+  if (signature === lastStatus) {
+    return;
+  }
+  lastStatus = signature;
+  await gladys.setConnectionStatus(connected, message).catch((err) => {
+    lastStatus = null;
+    logger.error('Could not report the connection status', err);
+  });
 }
 
 // --- Graceful shutdown -------------------------------------------------------
