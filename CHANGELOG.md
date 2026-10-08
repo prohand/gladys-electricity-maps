@@ -6,6 +6,8 @@ All notable changes to this integration are documented here. The format follows
 
 ## [Unreleased]
 
+## [2.2.1] - 2026-10-08
+
 ### Fixed
 
 - The refresh loop is started before the devices are published: a publication that failed (a timeout, a refused payload) no longer leaves the integration without a single read until the next configuration change or reconnection.
@@ -102,7 +104,8 @@ First public release.
 - Read the endpoint a free Home Assistant key may call
 - Stop publishing the device before the API token is set
 
-[Unreleased]: https://github.com/prohand/gladys-electricity-maps/compare/v2.2.0...HEAD
+[Unreleased]: https://github.com/prohand/gladys-electricity-maps/compare/v2.2.1...HEAD
+[2.2.1]: https://github.com/prohand/gladys-electricity-maps/compare/v2.2.0...v2.2.1
 [2.2.0]: https://github.com/prohand/gladys-electricity-maps/compare/v2.1.0...v2.2.0
 [2.1.0]: https://github.com/prohand/gladys-electricity-maps/compare/v2.0.5...v2.1.0
 [2.0.5]: https://github.com/prohand/gladys-electricity-maps/compare/v2.0.4...v2.0.5
