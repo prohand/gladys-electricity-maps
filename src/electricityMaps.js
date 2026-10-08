@@ -17,7 +17,7 @@
 // /v3/power-breakdown/latest, tried once and then left alone when the plan
 // refuses it (see src/devices/gridCarbon.js).
 //
-// Authentication is a single `auth-token` header. Node 20+ ships `fetch`
+// Authentication is a single `auth-token` header. Node 22+ ships `fetch`
 // natively, so no HTTP dependency is needed.
 // -----------------------------------------------------------------------------
 
@@ -35,12 +35,23 @@ const REQUEST_TIMEOUT_MS = 15_000;
  * quota problem (429) without parsing a string.
  */
 export class ElectricityMapsError extends Error {
-  constructor(message, status) {
+  constructor(message, status, { retryAfterSeconds = null } = {}) {
     super(message);
     this.name = 'ElectricityMapsError';
     this.status = status;
+    // How long a 429 asked us to wait (its `Retry-After`), so the refresh loop
+    // can honour it instead of guessing; null when the API did not say.
+    this.retryAfterSeconds = retryAfterSeconds;
   }
 }
+
+/**
+ * Status carried by an error that never reached Electricity Maps (DNS failure
+ * such as EAI_AGAIN right after a container start, timeout, connection
+ * refused). The refresh loop retries those sooner than its next tick: they
+ * cost no quota, and the network usually comes back within a minute.
+ */
+export const UNREACHABLE_STATUS = 0;
 
 /**
  * Latest grid status of the zone, from the endpoint every plan can call.
@@ -112,11 +123,18 @@ async function request(path, { apiToken, zone }) {
     });
   } catch (err) {
     // Network error or timeout: never leak the token in the message.
-    throw new ElectricityMapsError(`Electricity Maps unreachable: ${err.message}`, 0);
+    throw new ElectricityMapsError(
+      `Electricity Maps unreachable: ${err.message}`,
+      UNREACHABLE_STATUS,
+    );
   }
 
   if (!response.ok) {
-    throw new ElectricityMapsError(await describeHttpError(response, zone), response.status);
+    const retryAfterSeconds =
+      response.status === 429 ? parseRetryAfter(response.headers?.get?.('retry-after')) : null;
+    throw new ElectricityMapsError(await describeHttpError(response, zone), response.status, {
+      retryAfterSeconds,
+    });
   }
 
   return response.json();
@@ -143,6 +161,25 @@ async function describeHttpError(response, zone) {
     default:
       return `Electricity Maps HTTP ${response.status}${detail ? `: ${detail}` : ''}`;
   }
+}
+
+/**
+ * Read a `Retry-After` header: either a number of seconds or an HTTP date.
+ * @param {string|null|undefined} value raw header value
+ * @param {number} [now] current time, in ms
+ * @returns {number|null} seconds to wait (never negative), or null when the
+ *   header is missing or unreadable
+ */
+export function parseRetryAfter(value, now = Date.now()) {
+  if (value === null || value === undefined || String(value).trim() === '') {
+    return null;
+  }
+  const text = String(value).trim();
+  if (/^\d+$/.test(text)) {
+    return Number(text);
+  }
+  const at = Date.parse(text);
+  return Number.isFinite(at) ? Math.max(0, Math.ceil((at - now) / 1000)) : null;
 }
 
 /**

@@ -81,7 +81,8 @@ export async function publishCarbonLevelEvent(gladys, snapshot) {
  *               validated by the core;
  *   - `config`  the current integration configuration;
  *   - `refresh` runs one tick of the refresh loop (src/poller.js), i.e. reads
- *               Electricity Maps and publishes the states.
+ *               Electricity Maps and publishes the states; it REJECTS when
+ *               that read failed.
  * The returned object is exposed to the following actions of the scene under
  * the `outputs` keys declared in the manifest; throwing fails that action only.
  */
@@ -92,13 +93,15 @@ export const SCENE_ACTIONS = {
     }
     if (fields?.refresh) {
       logger.info('Scene action get_grid_data -> live read requested');
+      // A failed read throws out of here, and the action fails with it: the
+      // scene author asked for fresh values, and the previous reading handed
+      // over as if it had just been taken would be a lie.
       await refresh();
     }
     const snapshot = readGridSnapshot(config);
     if (snapshot === null) {
-      // Either nothing was read yet, or the refresh the scene asked for failed.
-      // Failing the action is the honest answer: the following actions must not
-      // branch on values nobody ever measured.
+      // Nothing was read yet. Failing the action is the honest answer: the
+      // following actions must not branch on values nobody ever measured.
       throw new Error(`No Electricity Maps reading available yet for zone ${config.zone}`);
     }
     return {

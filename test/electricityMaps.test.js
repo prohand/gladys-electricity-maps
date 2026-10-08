@@ -4,6 +4,7 @@ import {
   fetchGridStatus,
   fetchPowerBreakdown,
   ElectricityMapsError,
+  parseRetryAfter,
 } from '../src/electricityMaps.js';
 
 const realFetch = globalThis.fetch;
@@ -179,4 +180,31 @@ test('a network failure is wrapped without leaking the token', async () => {
       return true;
     },
   );
+});
+
+test('an exceeded quota carries the wait the API asked for', async () => {
+  globalThis.fetch = async () => ({
+    ok: false,
+    status: 429,
+    headers: new Headers({ 'retry-after': '120' }),
+    json: async () => ({}),
+  });
+
+  await assert.rejects(() => fetchGridStatus(CONFIG), { status: 429, retryAfterSeconds: 120 });
+});
+
+test('an exceeded quota without Retry-After says nothing about the wait', async () => {
+  globalThis.fetch = async () => ({ ok: false, status: 429, json: async () => ({}) });
+
+  await assert.rejects(() => fetchGridStatus(CONFIG), { status: 429, retryAfterSeconds: null });
+});
+
+test('parseRetryAfter reads seconds and HTTP dates, and nothing else', () => {
+  const now = Date.parse('2026-10-08T10:00:00Z');
+  assert.equal(parseRetryAfter('90', now), 90);
+  assert.equal(parseRetryAfter('Thu, 08 Oct 2026 10:05:00 GMT', now), 300);
+  assert.equal(parseRetryAfter('Thu, 08 Oct 2026 09:00:00 GMT', now), 0, 'a past date: no wait');
+  assert.equal(parseRetryAfter('soon', now), null);
+  assert.equal(parseRetryAfter(null, now), null);
+  assert.equal(parseRetryAfter('', now), null);
 });
