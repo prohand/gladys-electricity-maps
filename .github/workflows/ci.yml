@@ -7,8 +7,11 @@
 #   2. ESLint    -> catch real mistakes (undefined vars, dead code, ...);
 #   3. Tests     -> `node --test`, the built-in runner (no extra dependency).
 #
-# Runs on Node 24, the version the Docker image ships with (see the Dockerfile),
-# so the check exercises the exact runtime the integration runs on.
+# Runs on Node 22 (the `engines` floor) and Node 24, the version the Docker
+# image ships with (see the Dockerfile), so the check exercises the exact
+# runtime the integration runs on and the oldest one it claims to support.
+# Pull requests also build the image (without pushing it), so a broken
+# Dockerfile shows up before the release does.
 # -----------------------------------------------------------------------------
 name: CI
 
@@ -21,7 +24,11 @@ on:
 jobs:
   quality:
     runs-on: ubuntu-latest
-    name: Lint & test
+    name: Lint & test (Node ${{ matrix.node }})
+    strategy:
+      fail-fast: false
+      matrix:
+        node: [22, 24]
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -29,7 +36,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v7
         with:
-          node-version: 24
+          node-version: ${{ matrix.node }}
           cache: npm
 
       - name: Install dependencies
@@ -62,3 +69,23 @@ jobs:
 
       - name: Validate like the store indexer
         run: npx --yes github:GladysAssistant/integration-store .
+
+  docker:
+    # Build the image the way build.yml does, without pushing it: a Dockerfile
+    # or lockfile problem fails the pull request instead of the release.
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    name: Docker build
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Build (amd64, not pushed)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/amd64
+          push: false
