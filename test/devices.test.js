@@ -1,4 +1,4 @@
-import { test, afterEach } from 'node:test';
+import { test, afterEach, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
 import { DEVICE_FEATURE_UNITS } from '@gladysassistant/integration-sdk';
 import {
@@ -6,7 +6,10 @@ import {
   buildDiscoveredDevices,
   capabilitiesSignature,
   findBlueprintByDevice,
+  forgetPublishedStates,
+  publishDevices,
 } from '../src/devices/index.js';
+import { STATE_HEARTBEAT_MS } from '../src/devices/gridCarbon.js';
 import {
   GRAM_CO2EQ_PER_KILOWATT_HOUR,
   GRID_CARBON_SENSOR,
@@ -20,6 +23,12 @@ import { createFakeGladys } from './helpers/fakeGladys.js';
 
 const realFetch = globalThis.fetch;
 const config = normalizeConfig({ api_token: 'test-token', zone: 'FR' });
+
+beforeEach(() => {
+  // What was last published is module state: a batch a previous test sent
+  // must not be skipped as "already in Gladys" here.
+  forgetPublishedStates();
+});
 
 afterEach(() => {
   globalThis.fetch = realFetch;
@@ -231,6 +240,8 @@ test('a plan that refuses the power breakdown is asked only once', async () => {
   };
 
   await bp.onPoll(gladys, freeConfig);
+  // As if Gladys had lost them: an unchanged batch is otherwise not re-sent.
+  forgetPublishedStates();
   await bp.onPoll(gladys, freeConfig);
 
   assert.equal(calls.filter((url) => url.includes('/power-breakdown/')).length, 1);
@@ -562,4 +573,174 @@ test('a poll that read nothing records nothing', async () => {
 
   assert.equal(readGridSnapshot(zoneConfig), null, 'no reading, no snapshot to serve');
   assert.deepEqual(gladys.sceneEvents, []);
+});
+
+// --- History volume: an hourly value is published once -----------------------
+
+/** Count the API requests, by endpoint. */
+function countRequests() {
+  const stubbedFetch = globalThis.fetch;
+  const calls = [];
+  globalThis.fetch = async (url, options) => {
+    calls.push(String(url));
+    return stubbedFetch(url, options);
+  };
+  return calls;
+}
+
+test('a poll bringing back the hour already published writes nothing', async () => {
+  // Hourly values read every 15 minutes: three rows out of four used to be
+  // copies of the previous one in the history.
+  const gladys = createFakeGladys();
+  const [bp] = DEVICE_BLUEPRINTS;
+  const hourConfig = normalizeConfig({ api_token: 'same-hour-token', zone: 'FR' });
+  resetGridSnapshot();
+  stubApi({ status: gridStatus({ datetime: '2026-10-08T10:00:00.000Z' }), breakdown: 401 });
+
+  await bp.onPoll(gladys, hourConfig);
+  await bp.onPoll(gladys, hourConfig);
+
+  assert.deepEqual(
+    gladys.published.map((p) => p.state),
+    [57, 92],
+    'the second read is the same hour, same values',
+  );
+  assert.equal(readGridSnapshot(hourConfig).carbonIntensity, 57, 'the reading is still recorded');
+});
+
+test('a new hour is published, even with the same values', async () => {
+  const gladys = createFakeGladys();
+  const [bp] = DEVICE_BLUEPRINTS;
+  const hourConfig = normalizeConfig({ api_token: 'new-hour-token', zone: 'FR' });
+  stubApi({ status: gridStatus({ datetime: '2026-10-08T10:00:00.000Z' }), breakdown: 401 });
+  await bp.onPoll(gladys, hourConfig);
+  stubApi({ status: gridStatus({ datetime: '2026-10-08T11:00:00.000Z' }), breakdown: 401 });
+  await bp.onPoll(gladys, hourConfig);
+
+  assert.deepEqual(
+    gladys.published.map((p) => p.state),
+    [57, 92, 57, 92],
+  );
+});
+
+test('a changed value is published, even within the same hour', async () => {
+  const gladys = createFakeGladys();
+  const [bp] = DEVICE_BLUEPRINTS;
+  const hourConfig = normalizeConfig({ api_token: 'revised-token', zone: 'FR' });
+  const datetime = '2026-10-08T10:00:00.000Z';
+  stubApi({ status: gridStatus({ datetime }), breakdown: 401 });
+  await bp.onPoll(gladys, hourConfig);
+  // Electricity Maps revises an estimated hour.
+  stubApi({ status: gridStatus({ datetime, carbonIntensity: 61 }), breakdown: 401 });
+  await bp.onPoll(gladys, hourConfig);
+
+  assert.deepEqual(
+    gladys.published.map((p) => p.state),
+    [57, 92, 61, 92],
+  );
+});
+
+test('an unchanged batch is published again after the heartbeat', async () => {
+  // A feed stuck on the same hour must not leave the sensors on "no recent
+  // value".
+  const gladys = createFakeGladys();
+  const [bp] = DEVICE_BLUEPRINTS;
+  const stuckConfig = normalizeConfig({ api_token: 'stuck-token', zone: 'FR' });
+  stubApi({ status: gridStatus({ datetime: '2026-10-08T10:00:00.000Z' }), breakdown: 401 });
+  await bp.onPoll(gladys, stuckConfig);
+
+  const realNow = Date.now;
+  Date.now = () => realNow() + STATE_HEARTBEAT_MS;
+  try {
+    await bp.onPoll(gladys, stuckConfig);
+  } finally {
+    Date.now = realNow;
+  }
+
+  assert.deepEqual(
+    gladys.published.map((p) => p.state),
+    [57, 92, 57, 92],
+  );
+});
+
+test('a device created later gets the values, even unchanged since the last poll', async () => {
+  // The states published before the device existed were dropped by Gladys:
+  // "already published" must not survive the creation.
+  const gladys = createFakeGladys();
+  const [bp] = DEVICE_BLUEPRINTS;
+  const lateConfig = normalizeConfig({ api_token: 'late-token', zone: 'FR', poll_frequency: 300 });
+  stubApi({ status: gridStatus({ datetime: '2026-10-08T10:00:00.000Z' }), breakdown: 401 });
+  await bp.onPoll(gladys, lateConfig);
+  gladys.published.length = 0;
+
+  const realNow = Date.now;
+  // Past the replay cache (one interval), within the heartbeat.
+  Date.now = () => realNow() + 301 * 1000;
+  try {
+    await bp.onDeviceCreated(gladys, lateConfig);
+  } finally {
+    Date.now = realNow;
+  }
+
+  assert.deepEqual(
+    gladys.published.map((p) => p.state),
+    [57, 92],
+  );
+});
+
+test('a reconnection publishes the next reading, even unchanged', async () => {
+  const gladys = createFakeGladys();
+  const [bp] = DEVICE_BLUEPRINTS;
+  const reconnectConfig = normalizeConfig({ api_token: 'reconnect-token', zone: 'FR' });
+  stubApi({ status: gridStatus({ datetime: '2026-10-08T10:00:00.000Z' }), breakdown: 401 });
+  await bp.onPoll(gladys, reconnectConfig);
+
+  // What index.js does on `connected`.
+  forgetPublishedStates();
+  await bp.onPoll(gladys, reconnectConfig);
+
+  assert.deepEqual(
+    gladys.published.map((p) => p.state),
+    [57, 92, 57, 92],
+  );
+});
+
+test('a poll started while the publish probes the plan reuses the probe', async () => {
+  // index.js arms the refresh loop right after STARTING the publish, so a
+  // failing publish cannot leave the integration without reads: that first
+  // poll must wait for the probe instead of reading the breakdown twice.
+  const gladys = createFakeGladys();
+  const [bp] = DEVICE_BLUEPRINTS;
+  const startConfig = normalizeConfig({ api_token: 'start-token', zone: 'FR' });
+  stubApi({
+    status: gridStatus(),
+    breakdown: { fossilFreePercentage: 92, renewablePercentage: 28 },
+  });
+  const calls = countRequests();
+
+  const published = publishDevices(gladys, startConfig);
+  const polled = bp.onPoll(gladys, startConfig);
+  await Promise.all([published, polled]);
+
+  assert.equal(calls.filter((url) => url.includes('/power-breakdown/')).length, 1);
+  assert.deepEqual(
+    gladys.published.map((p) => p.state),
+    [57, 92, 28],
+  );
+});
+
+test('a replay on creation counts as published for the hour it carries', async () => {
+  const gladys = createFakeGladys();
+  const [bp] = DEVICE_BLUEPRINTS;
+  const replayConfig = normalizeConfig({ api_token: 'replay-hour-token', zone: 'FR' });
+  stubApi({ status: gridStatus({ datetime: '2026-10-08T10:00:00.000Z' }), breakdown: 401 });
+  await bp.onPoll(gladys, replayConfig);
+  await bp.onDeviceCreated(gladys, replayConfig);
+  await bp.onPoll(gladys, replayConfig);
+
+  assert.deepEqual(
+    gladys.published.map((p) => p.state),
+    [57, 92, 57, 92],
+    'the poll, the replay, and nothing for the same hour after it',
+  );
 });

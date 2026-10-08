@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-A Gladys Assistant **external integration** (Node 20+, ESM, no build step, one runtime
+A Gladys Assistant **external integration** (Node 22+, ESM, no build step, one runtime
 dependency: `@gladysassistant/integration-sdk`) that publishes the carbon intensity of the
 electricity consumed in one [Electricity Maps](https://www.electricitymaps.com) zone: carbon
 intensity (gCO2eq/kWh), carbon-free share and, when the plan allows it, renewable share. One
@@ -64,6 +64,16 @@ src/widgets.js            dashboard widget (tiles coloured after what they read)
   the first reading. Widget, trigger and action keys are stored by users: never rename them.
 - **A refresh asked during a running one is not dropped** (`poller.refreshNow()`): it reads once
   more right after, shared by every caller that asked meanwhile. Scheduled ticks still skip.
+- **The loop is armed before anything that can throw**: `connected` / `onConfigUpdated` START
+  `publishDevices`, call `poller.sync()`, then await the publish. The first poll waits for the
+  capability probe in flight (`pendingProbe`), so it is still read once.
+- **Failures**: a scheduled tick logs and swallows; `refreshNow()` REJECTS (scene action, widget
+  button must not present the previous reading as fresh). An unreachable API (status 0) is
+  retried after 60 s then 300 s, a 429 after its `Retry-After` (and nothing reads before), never
+  past the next tick.
+- **An unchanged batch is not re-published** (same `datetime`, same values): the data is hourly,
+  so publishing every tick filled the history with copies. `STATE_HEARTBEAT_MS` (3 h) re-sends
+  it; `forgetPublishedStates()` runs on `connected` and `onDeviceCreated`.
 
 ### Manifest
 

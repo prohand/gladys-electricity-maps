@@ -143,6 +143,23 @@ test('get_grid_data reads live when the scene author asked for it', async () => 
   assert.equal(outputs.level, CARBON_LEVELS.HIGH);
 });
 
+test('get_grid_data fails when the refresh it asked for failed, older reading or not', async () => {
+  const gladys = createFakeGladys();
+  read(57);
+  await assert.rejects(
+    () =>
+      SCENE_ACTIONS.get_grid_data(gladys, {
+        fields: { refresh: true },
+        config,
+        refresh: async () => {
+          throw new Error('Electricity Maps unreachable');
+        },
+      }),
+    /unreachable/,
+    'the previous reading must not be handed over as the fresh one the scene asked for',
+  );
+});
+
 test('get_grid_data fails rather than inventing values', async () => {
   const gladys = createFakeGladys();
   await assert.rejects(

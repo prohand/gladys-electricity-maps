@@ -14,6 +14,8 @@
 //     actually serves
 //   - capabilitiesSignature (optional): comparable string of what the device
 //     advertises, so a change discovered later triggers a re-publication
+//   - forgetPublishedStates (optional): drop the memory of what was last
+//     published, for a blueprint that skips unchanged states
 //
 // Electricity Maps exposes one grid per zone, so the catalog holds a single
 // device type. Add a file here and register it below to publish more.
@@ -119,6 +121,17 @@ export function capabilitiesSignature(config) {
  */
 function isUnknownFeatureError(err) {
   return err?.status === 400 && /unknown (category|type|unit)/i.test(err.message ?? '');
+}
+
+/**
+ * Make every blueprint publish its next reading even if unchanged: Gladys may
+ * not hold what was published before (it restarted, or the device did not
+ * exist yet).
+ */
+export function forgetPublishedStates() {
+  for (const bp of DEVICE_BLUEPRINTS) {
+    bp.forgetPublishedStates?.();
+  }
 }
 
 /**

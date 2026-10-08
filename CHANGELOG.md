@@ -6,9 +6,28 @@ All notable changes to this integration are documented here. The format follows
 
 ## [Unreleased]
 
+### Fixed
+
+- The refresh loop is started before the devices are published: a publication that failed (a timeout, a refused payload) no longer leaves the integration without a single read until the next configuration change or reconnection.
+- When Electricity Maps cannot be reached (network not up yet right after a start, DNS failure), the read is retried after 1 minute, then 5 minutes, instead of leaving the sensors empty until the next refresh (up to a day). A "quota exceeded" answer carrying a `Retry-After` delay is honoured: nothing is read before it.
+- A scene action asking for a fresh read, and the widget's Refresh button, now fail when that read fails, instead of returning the previous values as if they were fresh.
+
+### Changed
+
+- A reading that brings back the hour already published, with the same values, is no longer written to the history again (about three rows out of four at the default interval). It is re-sent every 3 hours when nothing moves, and always after a reconnection or when the device is created.
+- Node.js 22 or later is required (the Docker image ships Node 24); CI tests Node 22 and 24, and builds the Docker image on pull requests.
+- The Docker image installs strictly from the lockfile (`npm ci`, no `npm install` fallback) and drops the npm cache. Dependabot also proposes Docker base image updates.
+- An unhandled promise rejection is logged instead of stopping the container.
+
 ## [2.2.0] - 2026-10-07
 
-- Maintenance release, no functional change.
+### Fixed
+
+- The connection status in the Configuration screen now reports a failing refresh (revoked token, zone not covered by the plan) instead of staying green once a token and a zone are filled in.
+
+### Changed
+
+- CI runs the store admission checks on pull requests; Dependabot proposes npm and GitHub Actions updates.
 
 ## [2.1.0] - 2026-10-06
 

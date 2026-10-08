@@ -250,6 +250,22 @@ test('the refresh button reads the API and reports what it found', async () => {
   assert.ok(toast.en.length <= 200, 'a toast holds 200 characters');
 });
 
+test('a failed refresh shows as a failure, not as the previous figures', async () => {
+  read({ carbonIntensity: 61 });
+  const gladys = gladysWith({ deviceCreated: true });
+  await assert.rejects(
+    () =>
+      widget.action(gladys, {
+        actionKey: 'refresh',
+        config,
+        refresh: async () => {
+          throw new Error('Electricity Maps unreachable');
+        },
+      }),
+    /unreachable/,
+  );
+});
+
 test('an action key the content never declared is ignored, not obeyed', async () => {
   const gladys = gladysWith({ deviceCreated: true });
   let refreshed = false;

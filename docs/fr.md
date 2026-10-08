@@ -20,7 +20,11 @@ Un appareil, nommé d'après la zone suivie (par exemple
 | Électricité renouvelable | %          | Part venant des renouvelables uniquement                       | Non            |
 
 Ils conservent tous leur historique : ils s'affichent en graphique sur votre
-tableau de bord.
+tableau de bord. Electricity Maps fournit une valeur par heure : une lecture
+qui ramène l'heure déjà enregistrée, avec les mêmes valeurs, n'est pas écrite
+une seconde fois (elle est renvoyée au plus toutes les 3 heures quand rien ne
+bouge, pour que les capteurs n'aient jamais l'air figés). L'historique compte
+donc environ un point par heure, quel que soit l'intervalle de rafraîchissement.
 
 Ils appartiennent à la catégorie **Capteur carbone du réseau** de Gladys : c'est
 ce qui leur donne leur nom, leur icône et leur unité dans l'interface. Si votre
@@ -86,6 +90,13 @@ API ou la zone provoque également une lecture immédiate.
 
 Quand vous ajoutez l'appareil depuis l'onglet **Découverte**, ses capteurs sont
 remplis tout de suite : pas besoin d'attendre le prochain rafraîchissement.
+
+Quand Electricity Maps est injoignable (typiquement le réseau pas encore prêt
+juste après le démarrage de Gladys), l'intégration réessaie au bout d'une
+minute, puis de 5 minutes, au lieu d'attendre le prochain rafraîchissement ;
+un tel échec ne consomme aucune requête de votre quota. Quand Electricity Maps
+répond « quota dépassé » en indiquant un délai à respecter, rien n'est lu avant
+la fin de ce délai.
 
 Gladys sait piloter lui-même l'interrogation d'un appareil, mais uniquement
 avec une liste figée d'intervalles plafonnée à une minute : beaucoup trop
@@ -196,7 +207,9 @@ disposition des actions suivantes de la scène :
 Une case **« Interroger Electricity Maps d'abord »**, décochée par défaut,
 force une lecture en direct. Laissez-la décochée dans la plupart des cas : la
 donnée ne bouge qu'environ une fois par heure et les offres gratuites ont un
-quota mensuel de requêtes.
+quota mensuel de requêtes. Si cette lecture échoue, l'action échoue aussi,
+plutôt que de transmettre les valeurs précédentes comme si elles étaient
+fraîches. Il en va de même pour le bouton **Actualiser** du widget.
 
 ## Idées de scènes
 
