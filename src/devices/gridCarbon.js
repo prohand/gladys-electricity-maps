@@ -31,6 +31,13 @@
 // (Gladys has nowhere to store them yet), so the last batch is kept in memory
 // and replayed by `onDeviceCreated`: the device shows its values immediately
 // instead of waiting for the next tick of the refresh loop.
+//
+// Electricity Maps serves HOURLY values, read every 15 minutes by default:
+// three reads out of four bring back the hour already published, and Gladys
+// writes one history row per published state. A batch identical to the last
+// one published (same hour, same values) is therefore not sent again, except
+// once every STATE_HEARTBEAT_MS so a value that does not move is never shown
+// as "no recent value".
 // -----------------------------------------------------------------------------
 
 import { createLogger, DEVICE_FEATURE_UNITS } from '@gladysassistant/integration-sdk';
@@ -61,6 +68,11 @@ const FEATURE = {
 // Upper bound of the carbon intensity gauge. The dirtiest zones sit around
 // 900 gCO2eq/kWh; 1500 leaves room without flattening the usual range.
 const MAX_CARBON_INTENSITY = 1500;
+
+// How long an unchanged batch may go without being published again. Longer
+// than the hour a value covers, so the history keeps one row per hour, short
+// enough for a stuck feed to keep the sensors from looking dead.
+export const STATE_HEARTBEAT_MS = 3 * 3600 * 1000;
 
 export const gridCarbon = {
   key: DEVICE_TYPE,
@@ -157,13 +169,36 @@ export const gridCarbon = {
       return;
     }
     logger.info('Checking whether your plan serves the power breakdown (renewable share)...');
+    const probe = (async () => {
+      try {
+        const breakdown = await fetchPowerBreakdown(config);
+        rememberPowerBreakdownAllowed(config);
+        rememberProbedBreakdown(config, breakdown);
+      } catch (err) {
+        rememberPowerBreakdownFailure(config, err);
+      }
+    })();
+    // Set synchronously, before the first await: index.js arms the refresh
+    // loop right after STARTING the publish, and its first read must find this
+    // probe to wait for (see onPoll).
+    pendingProbe = { key: planKey(config), promise: probe };
     try {
-      const breakdown = await fetchPowerBreakdown(config);
-      rememberPowerBreakdownAllowed(config);
-      rememberProbedBreakdown(config, breakdown);
-    } catch (err) {
-      rememberPowerBreakdownFailure(config, err);
+      await probe;
+    } finally {
+      if (pendingProbe.promise === probe) {
+        pendingProbe = { key: null, promise: null };
+      }
     }
+  },
+
+  /**
+   * Forget what was last published, so the next poll publishes even an
+   * unchanged batch. Called whenever Gladys may not hold those states: the
+   * device was just created (states sent before it existed were dropped), or
+   * the connection to Gladys was re-established.
+   */
+  forgetPublishedStates() {
+    lastPublished = { key: null, signature: null, at: 0 };
   },
 
   /**
@@ -192,6 +227,12 @@ export const gridCarbon = {
 
   async onPoll(gladys, config) {
     const ids = gladys.externalIds(DEVICE_TYPE, config.zone);
+    // A capability probe still running for this token+zone is reading the
+    // breakdown right now: wait for it and reuse its answer rather than paying
+    // for the same request twice (the probe never rejects).
+    if (pendingProbe.key === planKey(config)) {
+      await pendingProbe.promise;
+    }
     logger.info(`Polling Electricity Maps for zone ${config.zone}...`);
 
     // ------------------------------------------------------------------ //
@@ -259,9 +300,16 @@ export const gridCarbon = {
       throw status.reason ?? breakdown?.reason ?? new Error('No data returned by Electricity Maps');
     }
 
-    // Publish every value in a single request (batch, up to 100).
-    await gladys.publishStates(states);
-    rememberStates(config, states);
+    // Publish every value in a single request (batch, up to 100), unless it
+    // is the batch Gladys already holds (see STATE_HEARTBEAT_MS).
+    const signature = JSON.stringify([values.datetime, states]);
+    if (wasJustPublished(config, signature)) {
+      logger.info('Same hourly values as the last publication: not written again');
+    } else {
+      await gladys.publishStates(states);
+      rememberPublished(config, signature);
+    }
+    rememberStates(config, states, signature);
 
     // The states are safe: now tell the rest of the integration what was read,
     // and fire the scene trigger when the grid actually changed level. The
@@ -280,10 +328,14 @@ export const gridCarbon = {
    * interval is worth a live read.
    */
   async onDeviceCreated(gladys, config) {
+    // Whatever was published before the device existed went nowhere.
+    this.forgetPublishedStates();
     const cached = takeFreshStates(config);
     if (cached) {
       logger.info(`Device created: replaying the last known values for zone ${config.zone}`);
-      await gladys.publishStates(cached);
+      await gladys.publishStates(cached.states);
+      // Gladys holds them now: the next poll of the same hour has nothing to add.
+      rememberPublished(config, cached.signature);
       return;
     }
     logger.info(`Device created: reading Electricity Maps for zone ${config.zone}`);
@@ -291,11 +343,30 @@ export const gridCarbon = {
   },
 };
 
-// Last batch published for a given token+zone, replayed on device creation.
-let lastStates = { key: null, at: 0, states: null };
+// Capability probe in flight, awaited by a poll for the same token+zone.
+let pendingProbe = { key: null, promise: null };
 
-function rememberStates(config, states) {
-  lastStates = { key: planKey(config), at: Date.now(), states };
+// Last batch actually sent to Gladys, to skip an identical one (see
+// STATE_HEARTBEAT_MS). Recorded only once publishStates resolved.
+let lastPublished = { key: null, signature: null, at: 0 };
+
+function wasJustPublished(config, signature) {
+  return (
+    lastPublished.key === planKey(config) &&
+    lastPublished.signature === signature &&
+    Date.now() - lastPublished.at < STATE_HEARTBEAT_MS
+  );
+}
+
+function rememberPublished(config, signature) {
+  lastPublished = { key: planKey(config), signature, at: Date.now() };
+}
+
+// Last batch published for a given token+zone, replayed on device creation.
+let lastStates = { key: null, at: 0, states: null, signature: null };
+
+function rememberStates(config, states, signature) {
+  lastStates = { key: planKey(config), at: Date.now(), states, signature };
 }
 
 /**
@@ -307,7 +378,7 @@ function takeFreshStates(config) {
     return null;
   }
   const ageSeconds = (Date.now() - lastStates.at) / 1000;
-  return ageSeconds <= config.poll_frequency ? lastStates.states : null;
+  return ageSeconds <= config.poll_frequency ? lastStates : null;
 }
 
 // What the plan does with the power breakdown, for one token+zone pair:

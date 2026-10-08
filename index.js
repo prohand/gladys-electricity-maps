@@ -29,6 +29,7 @@ import {
   capabilitiesSignature,
   publishDevices,
   findBlueprintByDevice,
+  forgetPublishedStates,
 } from './src/devices/index.js';
 import { SCENE_ACTIONS } from './src/scenes.js';
 import { WIDGETS } from './src/widgets.js';
@@ -103,7 +104,10 @@ gladys.onDeviceCreated(async (device) => {
 
 /**
  * One tick of the refresh loop: read every device type in turn. A blueprint
- * failing must not skip the next one, so each is awaited on its own.
+ * failing must not skip the next one, so each is awaited on its own; the first
+ * failure is rethrown at the end, once the status is reported, so the poller
+ * can retry a network error early and a caller that asked for fresh values
+ * (scene action, widget button) learns it did not get them.
  */
 async function refreshAllDevices() {
   if (!isConfigured(config)) {
@@ -142,6 +146,9 @@ async function refreshAllDevices() {
   // reading) lives in its content, so the card is asked to re-pull it. Purely a
   // nudge: rate-limited by the core, dropped while disconnected.
   nudgeWidgets();
+  if (failure) {
+    throw failure;
+  }
 }
 
 /** Ask the core to re-pull every declared widget ("re-pull me now"). */
@@ -184,7 +191,8 @@ for (const [widgetKey, widget] of Object.entries(WIDGETS)) {
  * Read Electricity Maps now, outside the refresh schedule: what a scene action
  * asking for fresh values and the widget's Refresh button both need. It is the
  * same tick as the loop's, so two of them never overlap and burn the quota
- * twice.
+ * twice. A failed read rejects: the caller must not present the previous
+ * reading as the fresh one it asked for.
  */
 async function refresh() {
   await poller.refreshNow();
@@ -195,18 +203,27 @@ gladys.onConfigUpdated(async (newConfig) => {
   logger.info('onConfigUpdated -> new configuration received');
   const previous = config;
   config = normalizeConfig(newConfig);
+  const statusReported = reportConfigurationStatus();
   // Re-publish the devices: the zone lives in the discovery payload, and
   // publishing is idempotent (upsert by external_id). This is also where they
   // first show up, since nothing is published before the token is saved.
-  await publishDevices(gladys, config);
-  await reportConfigurationStatus();
+  // Started, not awaited yet: a publish that throws (timeout, 400) must not
+  // keep the new interval from being applied below.
+  const published = publishDevices(gladys, config);
+  published.catch(() => {}); // awaited (and rethrown) below
   // Apply the new refresh interval. It refreshes on its own when the interval
   // changed, but a user who only pasted their token or picked another zone
-  // would otherwise face empty sensors until the next tick.
+  // would otherwise face empty sensors until the next tick. The read waits for
+  // the capability probe the publish just started (see gridCarbon.onPoll).
   const restarted = poller.sync(config.poll_frequency);
+  let refreshed = Promise.resolve();
   if (!restarted && credentialsChanged(previous, config)) {
-    await poller.refreshNow();
+    // Its failure is already in the connection status (reportRefreshStatus).
+    refreshed = poller.refreshNow().catch(() => {});
   }
+  await statusReported;
+  await refreshed;
+  await published;
 });
 
 /** Did the user change what we read, rather than how often we read it? */
@@ -224,19 +241,33 @@ gladys.on('connected', async () => {
     config = normalizeConfig(await gladys.getConfig());
     // A Gladys that restarted holds no status of ours: write it again.
     lastStatus = null;
+    // Nor, maybe, our last states: the next read publishes even an unchanged
+    // batch rather than trusting a memory of what it may have lost.
+    forgetPublishedStates();
 
-    // 2) (Re)publish the devices as soon as we are connected. A configuration
-    // still empty publishes nothing: step 3 tells the user why.
-    await publishDevices(gladys, config);
-
-    // 3) Report the application-level status, shown in the Configuration
+    // 2) Report the application-level status, shown in the Configuration
     // screen. Distinct from the container state machine: an integration can be
-    // RUNNING and still unable to reach its third-party service.
-    await reportConfigurationStatus();
+    // RUNNING and still unable to reach its third-party service. Issued first
+    // so the outcome of the read started in step 4 lands after it.
+    const statusReported = reportConfigurationStatus();
 
-    // 4) Start (or keep) the refresh loop. `sync` is a no-op when the interval
-    // has not changed, so a reconnection never triggers an extra API call.
+    // 3) (Re)publish the devices as soon as we are connected. A configuration
+    // still empty publishes nothing: step 2 tells the user why. Started, not
+    // awaited yet: see step 4.
+    const published = publishDevices(gladys, config);
+    published.catch(() => {}); // awaited (and rethrown) below
+
+    // 4) Start (or keep) the refresh loop BEFORE awaiting anything that can
+    // throw: armed after the publish, a publish that failed (a timeout, a 400)
+    // left the integration without a single read until the next configuration
+    // change or reconnection. `sync` is a no-op when the interval has not
+    // changed, so a reconnection never triggers an extra API call; its first
+    // read waits for the capability probe step 3 started, so the probe's
+    // answer is still reused instead of read twice.
     poller.sync(config.poll_frequency);
+
+    await statusReported;
+    await published;
   } catch (err) {
     logger.error('Post-connection initialization failed', err);
     await gladys
@@ -319,6 +350,17 @@ async function setStatus(connected, message) {
 gladys.handleShutdown((signal) => {
   logger.info(`Received ${signal} -> graceful shutdown`);
   poller.stop();
+});
+
+// --- Last-resort safety net --------------------------------------------------
+// A promise rejected with no handler (a forgotten `.catch` on a timer path, an
+// SDK call failing during a reconnection) terminates Node by default, and the
+// supervisor would restart the container in a loop over a transient error.
+// Log it instead: the refresh loop keeps running and the next tick recovers.
+// Deliberately no `uncaughtException` handler: a synchronous crash leaves the
+// process in an unknown state, and restarting is the right answer to it.
+process.on('unhandledRejection', (reason) => {
+  logger.error('Unhandled promise rejection', reason);
 });
 
 // --- Startup -----------------------------------------------------------------
