@@ -6,6 +6,8 @@ All notable changes to this integration are documented here. The format follows
 
 ## [Unreleased]
 
+## [2.2.5] - 2026-10-12
+
 ### Changed
 
 - `@gladysassistant/integration-sdk` updated to 0.15.0.
@@ -120,7 +122,8 @@ First public release.
 - Read the endpoint a free Home Assistant key may call
 - Stop publishing the device before the API token is set
 
-[Unreleased]: https://github.com/prohand/gladys-electricity-maps/compare/v2.2.4...HEAD
+[Unreleased]: https://github.com/prohand/gladys-electricity-maps/compare/v2.2.5...HEAD
+[2.2.5]: https://github.com/prohand/gladys-electricity-maps/compare/v2.2.4...v2.2.5
 [2.2.4]: https://github.com/prohand/gladys-electricity-maps/compare/v2.2.3...v2.2.4
 [2.2.3]: https://github.com/prohand/gladys-electricity-maps/compare/v2.2.2...v2.2.3
 [2.2.2]: https://github.com/prohand/gladys-electricity-maps/compare/v2.2.1...v2.2.2
