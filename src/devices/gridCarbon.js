@@ -221,6 +221,8 @@ export const gridCarbon = {
       return {
         en: `Connected: ${carbonIntensity} gCO₂eq/kWh in zone ${config.zone} right now.`,
         fr: `Connexion OK : ${carbonIntensity} gCO₂eq/kWh dans la zone ${config.zone} actuellement.`,
+        de: `Verbunden: derzeit ${carbonIntensity} gCO₂eq/kWh in der Zone ${config.zone}.`,
+        es: `Conectado: ${carbonIntensity} gCO₂eq/kWh en la zona ${config.zone} en este momento.`,
       };
     },
   },

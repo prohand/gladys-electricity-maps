@@ -82,6 +82,8 @@ export const WIDGETS = {
       return {
         en: `${snapshot.carbonIntensity} gCO₂eq/kWh in zone ${snapshot.zone}.`,
         fr: `${snapshot.carbonIntensity} gCO₂eq/kWh dans la zone ${snapshot.zone}.`,
+        de: `${snapshot.carbonIntensity} gCO₂eq/kWh in der Zone ${snapshot.zone}.`,
+        es: `${snapshot.carbonIntensity} gCO₂eq/kWh en la zona ${snapshot.zone}.`,
       };
     },
   },
@@ -105,6 +107,8 @@ async function buildGridCarbonContent(gladys, config) {
           text: {
             en: 'Set your Electricity Maps API token and zone in the integration configuration.',
             fr: "Renseignez votre token API Electricity Maps et votre zone dans la configuration de l'intégration.",
+            de: 'Geben Sie Ihr Electricity-Maps-API-Token und Ihre Zone in der Konfiguration der Integration ein.',
+            es: 'Indique su token de API de Electricity Maps y su zona en la configuración de la integración.',
           },
         },
       ],
@@ -122,6 +126,8 @@ async function buildGridCarbonContent(gladys, config) {
           text: {
             en: `No reading of zone ${config.zone} yet. The next refresh will fill this card.`,
             fr: `Aucune mesure de la zone ${config.zone} pour l'instant. Le prochain rafraîchissement remplira cette carte.`,
+            de: `Noch keine Messung der Zone ${config.zone}. Die nächste Aktualisierung füllt diese Karte.`,
+            es: `Todavía no hay ninguna medición de la zona ${config.zone}. La próxima actualización completará esta tarjeta.`,
           },
         },
         refreshButton(),
@@ -144,7 +150,12 @@ async function buildGridCarbonContent(gladys, config) {
       device_features: [features.carbonIntensity],
       interval: 'last-day',
       chart_type: 'area',
-      title: { en: 'Carbon intensity (24 h)', fr: 'Intensité carbone (24 h)' },
+      title: {
+        en: 'Carbon intensity (24 h)',
+        fr: 'Intensité carbone (24 h)',
+        de: 'CO₂-Intensität (24 h)',
+        es: 'Intensidad de carbono (24 h)',
+      },
     });
   } else {
     // The device is not created yet: no history to chart. Say where it comes
@@ -155,6 +166,8 @@ async function buildGridCarbonContent(gladys, config) {
       text: {
         en: 'Add the Electricity Maps device from the Discovery screen to get the history chart here.',
         fr: "Ajoutez l'appareil Electricity Maps depuis l'écran Découverte pour obtenir ici le graphique d'historique.",
+        de: 'Fügen Sie das Electricity-Maps-Gerät über den Reiter „Entdecken“ hinzu, um hier das Verlaufsdiagramm zu erhalten.',
+        es: 'Añada el dispositivo Electricity Maps desde la pestaña «Descubrir» para obtener aquí el gráfico del historial.',
       },
     });
   }
@@ -168,9 +181,18 @@ function statusComponent(snapshot) {
   return {
     type: 'status',
     items: [
-      { label: { en: 'Zone', fr: 'Zone' }, value: snapshot.zone, icon: 'map-pin' },
       {
-        label: { en: 'Carbon level', fr: 'Niveau carbone' },
+        label: { en: 'Zone', fr: 'Zone', de: 'Zone', es: 'Zona' },
+        value: snapshot.zone,
+        icon: 'map-pin',
+      },
+      {
+        label: {
+          en: 'Carbon level',
+          fr: 'Niveau carbone',
+          de: 'CO₂-Stufe',
+          es: 'Nivel de carbono',
+        },
         value: carbonLevelLabel(snapshot.level),
         color: carbonLevelColor(snapshot.level),
         icon: 'activity',
@@ -192,13 +214,18 @@ function statusComponent(snapshot) {
 function freshnessItem(snapshot) {
   if (snapshot.valueAt === null) {
     return {
-      label: { en: 'Last reading', fr: 'Dernière mesure' },
+      label: {
+        en: 'Last reading',
+        fr: 'Dernière mesure',
+        de: 'Letzte Messung',
+        es: 'Última medición',
+      },
       value: formatAge(gridSnapshotAgeSeconds(snapshot)),
       icon: 'clock',
     };
   }
   return {
-    label: { en: 'Hourly value', fr: 'Valeur horaire' },
+    label: { en: 'Hourly value', fr: 'Valeur horaire', de: 'Stundenwert', es: 'Valor horario' },
     value: formatValueHour(snapshot.valueAt),
     icon: 'clock',
   };
@@ -243,7 +270,7 @@ function valueTiles(snapshot) {
 function refreshButton() {
   return {
     type: 'button',
-    label: { en: 'Refresh', fr: 'Actualiser' },
+    label: { en: 'Refresh', fr: 'Actualiser', de: 'Aktualisieren', es: 'Actualizar' },
     icon: 'refresh-cw',
     style: 'secondary',
     action: { key: REFRESH_ACTION },
@@ -253,7 +280,7 @@ function refreshButton() {
 function mapButton(config) {
   return {
     type: 'button',
-    label: { en: 'Live map', fr: 'Carte en direct' },
+    label: { en: 'Live map', fr: 'Carte en direct', de: 'Live-Karte', es: 'Mapa en directo' },
     icon: 'external-link',
     style: 'secondary',
     link: { url: `${MAP_URL}/${encodeURIComponent(config.zone)}` },
@@ -296,9 +323,24 @@ function cleanShareColor(percentage) {
 
 // Tile labels, in one place: the same three names are used by the live and the
 // static versions of the card.
-const carbonIntensityLabel = () => ({ en: 'Carbon intensity', fr: 'Intensité carbone' });
-const carbonFreeLabel = () => ({ en: 'Carbon-free', fr: 'Décarbonée' });
-const renewableLabel = () => ({ en: 'Renewable', fr: 'Renouvelable' });
+const carbonIntensityLabel = () => ({
+  en: 'Carbon intensity',
+  fr: 'Intensité carbone',
+  de: 'CO₂-Intensität',
+  es: 'Intensidad de carbono',
+});
+const carbonFreeLabel = () => ({
+  en: 'Carbon-free',
+  fr: 'Décarbonée',
+  de: 'CO₂-frei',
+  es: 'Sin carbono',
+});
+const renewableLabel = () => ({
+  en: 'Renewable',
+  fr: 'Renouvelable',
+  de: 'Erneuerbar',
+  es: 'Renovable',
+});
 
 /**
  * How long the core may keep this content before pulling it again. The card
@@ -318,6 +360,8 @@ function formatAge(seconds) {
   return {
     en: ageText(seconds, 'just now', (n, unit) => `${n} ${unit} ago`),
     fr: ageText(seconds, "à l'instant", (n, unit) => `il y a ${n} ${unit}`),
+    de: ageText(seconds, 'gerade eben', (n, unit) => `vor ${n} ${unit}`),
+    es: ageText(seconds, 'ahora mismo', (n, unit) => `hace ${n} ${unit}`),
   };
 }
 
@@ -339,12 +383,22 @@ const HOUR_MS = 3600 * 1000;
 function formatValueHour(valueAt) {
   const hoursAgo = Math.floor(Date.now() / HOUR_MS) - Math.floor(valueAt / HOUR_MS);
   if (hoursAgo <= 0) {
-    return { en: 'current hour', fr: 'heure en cours' };
+    return { en: 'current hour', fr: 'heure en cours', de: 'aktuelle Stunde', es: 'hora actual' };
   }
   if (hoursAgo === 1) {
-    return { en: 'previous hour', fr: 'heure précédente' };
+    return {
+      en: 'previous hour',
+      fr: 'heure précédente',
+      de: 'vorherige Stunde',
+      es: 'hora anterior',
+    };
   }
-  return { en: `${hoursAgo} h ago`, fr: `il y a ${hoursAgo} h` };
+  return {
+    en: `${hoursAgo} h ago`,
+    fr: `il y a ${hoursAgo} h`,
+    de: `vor ${hoursAgo} h`,
+    es: `hace ${hoursAgo} h`,
+  };
 }
 
 /**

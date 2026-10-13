@@ -1,0 +1,278 @@
+# Electricity Maps
+
+Esta integración lee la **intensidad de carbono de la red eléctrica** de
+[Electricity Maps](https://www.electricitymaps.com/) y la expone en Gladys como
+sensores que puede mostrar en gráficos y usar en escenas para poner en marcha
+sus aparatos cuando la electricidad es más limpia.
+
+También incluye un **widget** para el panel, un **disparador** de escena y una
+**acción** de escena. Requiere **Gladys 5.1.0 o posterior**.
+
+## Qué obtiene
+
+Un dispositivo, con el nombre de la zona que sigue (por ejemplo
+`Electricity Maps (FR)`), con dos o tres sensores según su plan:
+
+| Sensor                          | Unidad     | Significado                                                   | Plan gratuito |
+| ------------------------------- | ---------- | ------------------------------------------------------------- | ------------- |
+| Intensidad de carbono de la red | gCO₂eq/kWh | Emisiones de la electricidad consumida ahora mismo en la zona | Sí            |
+| Electricidad sin carbono        | %          | Parte procedente de las renovables **y** de la nuclear        | Sí            |
+| Electricidad renovable          | %          | Parte procedente únicamente de las renovables                 | No            |
+
+Todos conservan su historial, por lo que aparecen como gráficos en su panel.
+Electricity Maps ofrece un valor por hora: una lectura que devuelve la hora ya
+registrada, con los mismos valores, no se vuelve a escribir (se reenvía como
+máximo cada 3 horas cuando nada cambia, para que los sensores nunca parezcan
+desactualizados). El historial contiene, por tanto, aproximadamente un punto
+por hora, sea cual sea el intervalo de actualización.
+
+Pertenecen a la categoría **Sensor de carbono de la red** de Gladys: es lo que
+les da su nombre, su icono y su unidad en la interfaz. Si su versión de Gladys
+todavía no conoce esa categoría, la integración los publica en su lugar como
+sensores genéricos: se muestran entonces como **«Desconocido»**, con los mismos
+valores. Actualice Gladys para obtener las etiquetas reales.
+
+La clave gratuita **Home Assistant** da acceso a un único punto de acceso de la
+API: el que ofrece la intensidad de carbono y la cuota fósil (y, por tanto, la
+cuota sin carbono, su complemento). La cuota renovable procede de otro punto de
+acceso, reservado a los planes de pago: la integración lo consulta **una vez**,
+antes de publicar el dispositivo. Si su plan lo rechaza, el sensor
+«Electricidad renovable» **no se publica en absoluto** — en lugar de mostrarse
+vacío de forma permanente — y los otros dos siguen funcionando. Cambie a un
+plan que ofrezca el desglose de producción y aparecerá en el siguiente
+reinicio de la integración.
+
+Si ya había añadido el dispositivo con sus tres sensores, Gladys conserva los
+que existen: elimine el dispositivo y vuelva a añadirlo desde la pestaña
+**Descubrir** para deshacerse del sensor vacío.
+
+## Obtener una clave de API
+
+El acceso gratuito es el que se llama **Home Assistant**: es el plan pensado
+para la domótica personal y funciona exactamente igual con Gladys.
+
+1. Cree una cuenta en el
+   [portal de Electricity Maps](https://portal.electricitymaps.com/).
+2. Vaya a **Settings → Access** y elija la pestaña **Home Assistant** (las
+   otras pestañas, _Trial_ y _Academic_, son ofertas distintas). Actívela: sus
+   condiciones de uso gratuito son un uso personal, no comercial y sin
+   generación de ingresos, que es lo que hace un servidor domótico.
+3. Vaya a **Settings → API keys**, cree su clave y cópiela.
+4. Anote la **zona** que aparece junto a su clave: una clave gratuita Home
+   Assistant cubre solo esa zona, y hay que indicarle a Gladys cuál es — da
+   nombre e identifica al dispositivo antes de la primera llamada a la API. Los
+   identificadores de zona tienen el aspecto de `FR`, `DE`, `ES`, `GB` o
+   `US-CAL-CISO`; la lista completa la ofrece
+   <https://api.electricitymaps.com/v3/zones>.
+
+## Configuración
+
+1. Abra la pestaña **Configuración** de la integración.
+2. Pegue la **clave de API** creada con el acceso Home Assistant.
+3. Indique la **zona** que desea seguir, la misma que la de su clave (`FR` por
+   defecto).
+4. Si lo desea, ajuste el **intervalo de actualización** (900 segundos por
+   defecto).
+5. Guarde y pulse **Probar la conexión**: la intensidad de carbono actual de su
+   zona aparece bajo el botón.
+6. El dispositivo aparece en la pestaña **Descubrir**, listo para añadirse.
+   Mientras la clave de API no esté guardada, la integración **no ofrece ningún
+   dispositivo**: solo podría mostrar sensores vacíos.
+
+### Intervalo de actualización
+
+La integración ejecuta su propio temporizador de actualización con el
+intervalo que usted fije. Electricity Maps actualiza sus datos
+aproximadamente **una vez por hora** y los planes gratuitos tienen una cuota
+mensual de peticiones, así que no se gana nada actualizando más rápido. El
+valor está limitado entre **300 s** (5 minutos) y **86 400 s** (1 día), y su
+cambio se aplica de inmediato: no hace falta reiniciar, y el nuevo intervalo
+lanza una actualización en el acto. Cambiar la clave de API o la zona también
+lanza una lectura inmediata.
+
+Cuando añade el dispositivo desde la pestaña **Descubrir**, sus sensores se
+rellenan enseguida: no hace falta esperar a la siguiente actualización.
+
+Cuando no se puede contactar en absoluto con Electricity Maps (normalmente
+porque la red aún no está lista justo después de arrancar Gladys), la
+integración lo vuelve a intentar al cabo de 1 minuto y después de 5 minutos,
+en lugar de esperar a la siguiente actualización; un fallo así no consume
+ninguna petición de su cuota. Cuando Electricity Maps responde «cuota
+superada» con un plazo que respetar, no se lee nada antes de que termine ese
+plazo.
+
+Gladys puede gestionar por sí mismo la consulta de un dispositivo, pero solo
+con una lista fija de intervalos limitada a un minuto: demasiado rápido para
+una API horaria y con cuota. Por eso los dispositivos se publican sin
+`poll_frequency`.
+
+### Cambiar de zona
+
+La zona forma parte de la identidad del dispositivo: cambiar a otra zona crea
+un dispositivo **nuevo**. El antiguo deja de actualizarse y puede eliminarse de
+Gladys.
+
+## El widget del panel
+
+Desde Gladys 5.1, la integración añade una tarjeta **Carbono de la red** al
+selector de widgets de su panel. Muestra:
+
+- la **zona** que sigue, el **nivel de carbono** actual y la **hora del
+  valor** («hora actual», «hora anterior», «hace 3 h»): Electricity Maps ofrece
+  un valor por hora, así que una lectura a las 20:47 muestra el valor de la
+  hora de las 20:00;
+- una casilla por sensor (intensidad de carbono, cuota sin carbono y, si su
+  plan la ofrece, cuota renovable), cuya **cifra se colorea** según lo que
+  indica: la intensidad de carbono toma el color de su nivel, y las dos cuotas
+  pasan del verde (70 % o más) al naranja (40 % o más) y después al rojo — los
+  mismos colores que las insignias de la lista de dispositivos;
+- un **gráfico** de la intensidad de carbono de las últimas 24 horas;
+- un botón **Actualizar** (consulta Electricity Maps en el acto) y un enlace al
+  mapa en directo de su zona.
+
+Las casillas se actualizan en cada lectura de Electricity Maps: la tarjeta se
+vuelve a solicitar justo después de cada consulta, así que las cifras siguen el
+ritmo de los sensores.
+
+El gráfico se apoya en el dispositivo: mientras no lo añada desde la pestaña
+**Descubrir**, la tarjeta sigue mostrando los valores, sin el gráfico, y se lo
+indica.
+
+### Lo que cuesta el color
+
+Gladys solo colorea la cifra de una casilla cuando la tarjeta lleva el valor
+ella misma: una casilla vinculada a la funcionalidad del dispositivo la dibuja
+el componente propio del núcleo, que ignora el color solicitado. Por eso la
+tarjeta envía sus propias cifras, con dos consecuencias:
+
+- la unidad de la intensidad de carbono se muestra como **`g/kWh`** y no
+  `gCO₂eq/kWh`: la unidad de una casilla admite 6 caracteres y el núcleo
+  recorta lo que sobra. La lista de dispositivos conserva la unidad completa;
+- las casillas ya no siguen los estados en tiempo real: se redibujan cada vez
+  que se vuelve a solicitar la tarjeta. En la práctica no cambia nada: el
+  bucle de consulta avisa al widget justo después de cada lectura, que es
+  precisamente cuando cambia una cifra.
+
+Por último, el color tiñe el **texto** de la cifra; no dibuja una pastilla
+rellena como en la lista de dispositivos. El vocabulario de los widgets no
+tiene insignias en una casilla.
+
+## El nivel de carbono
+
+La intensidad de carbono es un número; el **nivel** es su lectura en cinco
+tramos, que usan el widget y el disparador de escena:
+
+| Nivel    | Intensidad de carbono |
+| -------- | --------------------- |
+| Muy bajo | < 100 gCO₂eq/kWh      |
+| Bajo     | 100 – 200 gCO₂eq/kWh  |
+| Moderado | 200 – 400 gCO₂eq/kWh  |
+| Alto     | 400 – 600 gCO₂eq/kWh  |
+| Muy alto | ≥ 600 gCO₂eq/kWh      |
+
+Los tramos son fijos e iguales para todas las zonas: una escena significa lo
+mismo de una semana a otra. Un margen de 10 gCO₂eq/kWh evita que un valor
+situado justo en un límite cambie el nivel en cada lectura.
+
+## Disparador de escena
+
+En el editor de escenas, en la categoría **Integraciones**:
+
+**«El nivel de carbono de la red ha cambiado»** — se activa cuando su zona pasa
+de un tramo a otro. Puede filtrar:
+
+- por el **nuevo nivel** (por ejemplo, solo «Muy bajo» y «Bajo»);
+- por el **sentido** (la red se ha vuelto más limpia o más sucia).
+
+Deje un filtro vacío para reaccionar en todos los casos.
+
+Se activa **una vez por cambio**, no en cada actualización, y nunca en la
+primera lectura tras un reinicio (nada ha cambiado, la integración acaba de
+empezar a mirar).
+
+La escena puede reutilizar los valores del evento:
+`{{triggerEvent.data.level}}`, `previous_level`, `direction`, `zone`,
+`carbon_intensity`, `carbon_free_percentage`, `renewable_percentage`.
+
+> Para un simple umbral («cuando la intensidad baje de 80»), use el disparador
+> estándar de Gladys sobre el valor del sensor: para eso está. El disparador de
+> la integración sirve para el **cambio de tramo**, que Gladys no puede
+> expresar por sí solo.
+
+## Acción de escena
+
+**«Obtener los datos de carbono de la red»** — pone los valores de su zona a
+disposición de las siguientes acciones de la escena: `zone`, `level`,
+`carbon_intensity`, `carbon_free_percentage`, `renewable_percentage` y
+`age_seconds` (la antigüedad de la medición, en segundos).
+
+Una casilla **«Consultar primero Electricity Maps»**, desactivada por defecto,
+fuerza una lectura en directo. Déjela desactivada en la mayoría de los casos:
+los datos solo cambian aproximadamente una vez por hora y los planes gratuitos
+tienen una cuota mensual de peticiones. Si esa lectura en directo falla, la
+acción también falla, en lugar de pasar los valores anteriores como si fueran
+recientes. Lo mismo ocurre con el botón **Actualizar** del widget.
+
+## Ideas de escenas
+
+- Poner en marcha el lavavajillas o cargar el coche cuando el nivel de carbono
+  llegue a «Muy bajo» o «Bajo» (disparador de la integración).
+- Poner en marcha el lavavajillas o cargar el coche cuando la intensidad de
+  carbono baje de un umbral que usted elija (disparador estándar sobre el
+  sensor).
+- Recibir una notificación cuando la cuota sin carbono supere el 90 %.
+- Enviar un mensaje con la intensidad actual: la acción **Obtener los datos de
+  carbono de la red** y después una notificación que use `carbon_intensity`.
+- Representar su propio consumo junto a la intensidad de la red para ver el
+  coste en CO₂ de sus hábitos.
+
+## Resolución de problemas
+
+| Mensaje                            | Qué hacer                                                                |
+| ---------------------------------- | ------------------------------------------------------------------------ |
+| `Invalid API token ... (HTTP 401)` | Token mal copiado, **o** una zona distinta de la de su clave             |
+| `Zone ... not allowed (HTTP 403)`  | Su plan no cubre esta zona: use su zona de origen                        |
+| `Unknown zone (HTTP 404)`          | Compruebe el identificador en la lista de zonas                          |
+| `quota exceeded (HTTP 429)`        | Aumente el intervalo de actualización o espere a que se renueve la cuota |
+| `Electricity Maps unreachable`     | Problema de red o de DNS en el equipo de Gladys                          |
+
+### El valor no coincide con el del sitio de Electricity Maps
+
+Es normal, los dos no muestran lo mismo:
+
+- **La integración lee un valor por hora.** Una clave gratuita solo puede
+  llamar a `/v3/home-assistant`, que ofrece el valor de la hora actual (a
+  menudo una estimación).
+- **El sitio dibuja puntos cada 5 o 15 minutos**, marcados como
+  «Preliminary». Cuando la intensidad cambia rápido, un punto de las 22:45
+  puede estar lejos del valor horario.
+- **Los datos se revisan después.** Los valores estimados y luego
+  preliminares los corrige Electricity Maps en las horas siguientes.
+
+Para comparar, use la misma hora: los registros indican la hora del valor leído
+(`Carbon intensity: 66 gCO₂eq/kWh (hourly value of 2026-09-22T20:00:00.000Z)`,
+hora UTC), y cambie el sitio a la granularidad **horaria**.
+
+### Los sensores siguen mostrando «Desconocido»
+
+Dos causas posibles:
+
+1. **Su Gladys todavía no conoce la categoría.** Los registros de la
+   integración lo indican (`does not know the grid carbon sensors yet`):
+   actualice Gladys y después siga el paso 2.
+2. **El dispositivo se creó antes.** Gladys nunca reescribe las categorías de
+   las funcionalidades de un dispositivo ya creado: elimine el dispositivo
+   `Electricity Maps (...)` en **Configuración → Dispositivos** y vuelva a
+   añadirlo desde la pestaña **Descubrir** de la integración. El historial del
+   dispositivo antiguo se pierde y los valores empiezan de cero.
+
+La integración registra todo lo que hace: consulte los registros de la
+integración desde la interfaz de Gladys (o `docker logs` en el equipo) con
+`LOG_LEVEL=debug` para obtener todo el detalle.
+
+Algunas zonas no publican datos a todas las horas. Cuando ocurre, el valor que
+falta simplemente se omite en esa ronda, en lugar de escribirse como un `0`
+engañoso.
+
+El plan gratuito está limitado a **una zona** y **50 peticiones por hora**: con
+el intervalo por defecto (900 s), la integración consume 4 por hora.

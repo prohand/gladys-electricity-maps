@@ -54,6 +54,22 @@ function read(values = {}) {
 
 const typesOf = (content) => content.components.map((component) => component.type);
 
+/** Every multi-language object (anything with an `en` key) found in a content. */
+function multiLanguageTexts(node, found = []) {
+  if (Array.isArray(node)) {
+    node.forEach((child) => multiLanguageTexts(child, found));
+  } else if (node && typeof node === 'object') {
+    if (typeof node.en === 'string') {
+      found.push(node);
+    } else {
+      Object.values(node).forEach((child) => multiLanguageTexts(child, found));
+    }
+  }
+  return found;
+}
+
+const LANGUAGES = ['en', 'fr', 'de', 'es'];
+
 test('every state of the card is a content the core keeps as sent', async () => {
   const cases = {
     'not configured': [normalizeConfig({ api_token: '', zone: 'FR' }), false, false],
@@ -69,6 +85,31 @@ test('every state of the card is a content the core keeps as sent', async () => 
     const gladys = gladysWith({ deviceCreated });
     const content = await widget.get(gladys, { config: widgetConfig });
     assert.deepEqual(validateWidgetContent(content), [], `content of the "${name}" card`);
+  }
+});
+
+test('every text of the card is written in every language Gladys speaks', async () => {
+  const twoHoursAgo = new Date(Date.now() - 2 * 3600 * 1000).toISOString();
+  const cases = [
+    [normalizeConfig({ api_token: '', zone: 'FR' }), false, false],
+    [config, false, false],
+    [config, true, false, null],
+    [config, true, true, twoHoursAgo],
+  ];
+  for (const [widgetConfig, hasReading, deviceCreated, datetime] of cases) {
+    resetGridSnapshot();
+    if (hasReading) {
+      read({ datetime });
+    }
+    const content = await widget.get(gladysWith({ deviceCreated }), { config: widgetConfig });
+    const texts = multiLanguageTexts(content);
+    assert.ok(texts.length > 0);
+    for (const text of texts) {
+      assert.deepEqual(Object.keys(text).sort(), [...LANGUAGES].sort(), JSON.stringify(text));
+      for (const lang of LANGUAGES) {
+        assert.ok(text[lang], `${lang} missing in ${JSON.stringify(text)}`);
+      }
+    }
   }
 });
 

@@ -95,16 +95,18 @@ test('the direction says which way the grid moved', () => {
   );
 });
 
-test('every level has a label and a colour, in both languages', () => {
+test('every level has a label and a colour, in every language', () => {
   for (const level of Object.values(CARBON_LEVELS)) {
     const label = carbonLevelLabel(level);
-    assert.ok(label.en, `${level} needs an English label`);
-    assert.ok(label.fr, `${level} needs a French label`);
-    assert.ok(label.en.length <= 40, 'a status value holds 40 characters');
+    assert.deepEqual(Object.keys(label), ['en', 'fr', 'de', 'es'], `${level} label languages`);
+    for (const [lang, text] of Object.entries(label)) {
+      assert.ok(text, `${level} needs a ${lang} label`);
+      assert.ok(text.length <= 40, `a status value holds 40 characters (${level}.${lang})`);
+    }
     assert.ok(typeof carbonLevelColor(level) === 'string');
   }
   // An unknown level must still render something rather than break the card.
-  assert.ok(carbonLevelLabel(null).en);
+  assert.deepEqual(Object.keys(carbonLevelLabel(null)), ['en', 'fr', 'de', 'es']);
   assert.equal(carbonLevelColor(null), 'neutral');
 });
 

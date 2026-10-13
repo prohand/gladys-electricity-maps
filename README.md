@@ -195,7 +195,7 @@ rather than rewriting the history of the previous one.
 │  ├─ electricityMaps.js             # Electricity Maps API driver (the only fetch)
 │  ├─ poller.js                      # internal refresh loop (Gladys caps polling at 1 min)
 │  └─ config.js                      # config defaults, normalization, clamping
-├─ docs/en.md, docs/fr.md            # user documentation, re-hosted by Gladys
+├─ docs/{en,fr,de,es}.md            # user documentation, re-hosted by Gladys
 ├─ assets/cover.html                 # source of the catalog cover (see below)
 ├─ cover.jpg                         # catalog cover, 800×534 px
 ├─ gladys-assistant-integration.json # manifest (name, config schema, image…)
