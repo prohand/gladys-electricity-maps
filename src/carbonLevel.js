@@ -65,11 +65,16 @@ export const CARBON_LEVEL_DIRECTIONS = {
 // Multi-language labels, used by the widget (the manifest carries its own copy
 // for the scene editor, which is rendered by the core without asking us).
 const CARBON_LEVEL_LABELS = {
-  [CARBON_LEVELS.VERY_LOW]: { en: 'Very low', fr: 'Très faible' },
-  [CARBON_LEVELS.LOW]: { en: 'Low', fr: 'Faible' },
-  [CARBON_LEVELS.MODERATE]: { en: 'Moderate', fr: 'Modéré' },
-  [CARBON_LEVELS.HIGH]: { en: 'High', fr: 'Élevé' },
-  [CARBON_LEVELS.VERY_HIGH]: { en: 'Very high', fr: 'Très élevé' },
+  [CARBON_LEVELS.VERY_LOW]: {
+    en: 'Very low',
+    fr: 'Très faible',
+    de: 'Sehr niedrig',
+    es: 'Muy bajo',
+  },
+  [CARBON_LEVELS.LOW]: { en: 'Low', fr: 'Faible', de: 'Niedrig', es: 'Bajo' },
+  [CARBON_LEVELS.MODERATE]: { en: 'Moderate', fr: 'Modéré', de: 'Mittel', es: 'Moderado' },
+  [CARBON_LEVELS.HIGH]: { en: 'High', fr: 'Élevé', de: 'Hoch', es: 'Alto' },
+  [CARBON_LEVELS.VERY_HIGH]: { en: 'Very high', fr: 'Très élevé', de: 'Sehr hoch', es: 'Muy alto' },
 };
 
 // Semantic widget colours: the dashboard maps them to the theme, in both light
@@ -142,7 +147,14 @@ export function carbonLevelDirection(previousLevel, level) {
 
 /** Multi-language label of a level, for the widget. */
 export function carbonLevelLabel(level) {
-  return CARBON_LEVEL_LABELS[level] ?? { en: 'Unknown', fr: 'Inconnu' };
+  return (
+    CARBON_LEVEL_LABELS[level] ?? {
+      en: 'Unknown',
+      fr: 'Inconnu',
+      de: 'Unbekannt',
+      es: 'Desconocido',
+    }
+  );
 }
 
 /** Semantic widget colour of a level. */

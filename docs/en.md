@@ -42,8 +42,8 @@ Move to a plan that serves the power breakdown and it appears on the next
 restart of the integration.
 
 If you had already added the device with its three sensors, Gladys keeps the
-ones that exist: delete the device and add it again from the **Discovery**
-screen to get rid of the empty sensor.
+ones that exist: delete the device and add it again from the **Discover**
+tab to get rid of the empty sensor.
 
 ## Get an API key
 
@@ -71,7 +71,7 @@ personal home automation, and it works exactly the same for Gladys.
 4. Optionally adjust the **refresh interval** (900 seconds by default).
 5. Save, then click **Test the connection**: the current carbon intensity of
    your zone is displayed under the button.
-6. The device appears in the **Discovery** tab, ready to be added. As long as
+6. The device appears in the **Discover** tab, ready to be added. As long as
    the API key is not saved, the integration offers **no device at all**: it
    could only show empty sensors.
 
@@ -85,7 +85,7 @@ applies immediately — no restart needed, and the new interval triggers a
 refresh straight away. Changing the API key or the zone also triggers an
 immediate read.
 
-When you add the device from the **Discovery** tab, its sensors are filled in
+When you add the device from the **Discover** tab, its sensors are filled in
 right away: no need to wait for the next refresh.
 
 When Electricity Maps cannot be reached at all (typically the network not being
@@ -124,7 +124,7 @@ picker of your dashboard. It shows:
 The tiles are refreshed on every Electricity Maps reading: the card is pulled
 again right after each poll, so the figures move at the pace of the sensors.
 
-The chart relies on the device: until you add it from the **Discovery** screen,
+The chart relies on the device: until you add it from the **Discover** tab,
 the card still shows the values, without the chart, and tells you so.
 
 ### What the colour costs
@@ -245,8 +245,8 @@ Two possible causes:
    (`does not know the grid carbon sensors yet`): update Gladys, then do step 2.
 2. **The device was created before.** Gladys never rewrites the feature
    categories of an already-created device: delete the
-   `Electricity Maps (...)` device in **Settings → Devices**, then add it again
-   from the integration's **Discovery** tab. The old device's history is lost,
+   `Electricity Maps (...)` device in the integration's **Devices** tab, then add it again
+   from its **Discover** tab. The old device's history is lost,
    the values start over.
 
 The integration logs everything it does: check the integration logs from the

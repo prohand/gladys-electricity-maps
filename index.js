@@ -46,6 +46,8 @@ const poller = createPoller(refreshAllDevices);
 const NOT_CONFIGURED_MESSAGE = {
   en: 'Set your Electricity Maps API token and zone in the configuration.',
   fr: 'Renseignez votre token API Electricity Maps et votre zone dans la configuration.',
+  de: 'Gib dein Electricity-Maps-API-Token und deine Zone in der Konfiguration ein.',
+  es: 'Indique su token de API de Electricity Maps y su zona en la configuración.',
 };
 
 // --- Discovery: Gladys asks for the list of devices --------------------------
@@ -274,6 +276,8 @@ gladys.on('connected', async () => {
       .setConnectionStatus(false, {
         en: 'Initialization failed, check the integration logs.',
         fr: "L'initialisation a échoué, consultez les logs de l'intégration.",
+        de: 'Die Initialisierung ist fehlgeschlagen, prüfe die Protokolle der Integration.',
+        es: 'La inicialización ha fallado, consulte los registros de la integración.',
       })
       .catch(() => {});
   }
@@ -314,10 +318,14 @@ async function reportRefreshStatus(failure) {
       ? {
           en: `Electricity Maps refused the API token or the zone: ${reason}`,
           fr: `Electricity Maps a refusé le token API ou la zone : ${reason}`,
+          de: `Electricity Maps hat das API-Token oder die Zone abgelehnt: ${reason}`,
+          es: `Electricity Maps ha rechazado el token de API o la zona: ${reason}`,
         }
       : {
           en: `The last refresh failed: ${reason}`,
           fr: `La dernière lecture a échoué : ${reason}`,
+          de: `Die letzte Abfrage ist fehlgeschlagen: ${reason}`,
+          es: `La última lectura ha fallado: ${reason}`,
         },
   );
 }
@@ -329,7 +337,7 @@ let lastStatus = null;
 /**
  * Write the connection status when it changed.
  * @param {boolean} connected - Whether the integration works.
- * @param {{en: string, fr: string}} [message] - Why not.
+ * @param {{en: string, fr: string, de: string, es: string}} [message] - Why not.
  * @returns {Promise<void>} Resolves once Gladys stored it.
  */
 async function setStatus(connected, message) {

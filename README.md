@@ -44,8 +44,8 @@ Two consequences worth knowing:
   strings and prefers the SDK constants as soon as a release carries them;
 - the core upserts the **params** of an already-created device on re-publish,
   never its feature categories: a device created while the fallback was active
-  keeps its "Unknown" features. Delete it and re-add it from the **Discovery**
-  screen to get the real ones.
+  keeps its "Unknown" features. Delete it and re-add it from the **Discover**
+  tab to get the real ones.
 
 `/v3/home-assistant` is the only endpoint the free "Home Assistant" access
 serves; it returns the carbon intensity and the fossil share, whose complement
@@ -80,7 +80,7 @@ One card, built around the device once the user created it:
 
 The card is never empty: with no token it says what to configure, with no
 reading yet it says so, and while the device does not exist it shows the plain
-values and points at the Discovery screen. Every one of those states is checked
+values and points at the Discover tab. Every one of those states is checked
 against the SDK's own `validateWidgetContent` in `test/widgets.test.js` — an
 empty report means the core renders the content exactly as sent.
 
@@ -195,7 +195,7 @@ rather than rewriting the history of the previous one.
 │  ├─ electricityMaps.js             # Electricity Maps API driver (the only fetch)
 │  ├─ poller.js                      # internal refresh loop (Gladys caps polling at 1 min)
 │  └─ config.js                      # config defaults, normalization, clamping
-├─ docs/en.md, docs/fr.md            # user documentation, re-hosted by Gladys
+├─ docs/{en,fr,de,es}.md            # user documentation, re-hosted by Gladys
 ├─ assets/cover.html                 # source of the catalog cover (see below)
 ├─ cover.jpg                         # catalog cover, 800×534 px
 ├─ gladys-assistant-integration.json # manifest (name, config schema, image…)

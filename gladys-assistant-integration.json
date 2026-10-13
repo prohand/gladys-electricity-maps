@@ -4,7 +4,9 @@
   "name": "Electricity Maps",
   "description": {
     "en": "Live carbon intensity and carbon-free share of your electricity grid.",
-    "fr": "Intensité carbone et part d'électricité décarbonée de votre réseau."
+    "fr": "Intensité carbone et part d'électricité décarbonée de votre réseau.",
+    "de": "CO₂-Intensität und CO₂-freier Anteil deines Stromnetzes in Echtzeit.",
+    "es": "Intensidad de carbono y cuota sin carbono de su red eléctrica, en directo."
   },
   "version": "2.2.5",
   "docker_image": "ghcr.io/prohand/gladys-electricity-maps:2.2.5",
@@ -18,25 +20,33 @@
       "type": "section",
       "label": {
         "en": "Getting started",
-        "fr": "Pour commencer"
+        "fr": "Pour commencer",
+        "de": "Erste Schritte",
+        "es": "Primeros pasos"
       },
       "description": {
         "en": "Electricity Maps publishes the carbon intensity of electricity grids worldwide. Create a free account on the portal, then in Settings > Access activate the \"Home Assistant\" plan: it is the free, personal and non-commercial one (Trial and Academic are the other tabs). Create your key in Settings > API keys, paste it below, then set the zone you want to follow (for example FR, DE or US-CAL-CISO). A free key covers ONE zone: use the zone shown next to it, or every request answers 401. The free plan serves the carbon intensity and the carbon-free share; the renewable share needs a paid plan and stays empty otherwise.",
-        "fr": "Electricity Maps publie l'intensité carbone des réseaux électriques dans le monde. Créez un compte gratuit sur le portail, puis dans Settings > Access activez l'offre \"Home Assistant\" : c'est la gratuite, personnelle et non commerciale (Trial et Academic sont les autres onglets). Créez votre clé dans Settings > API keys, collez-la ci-dessous, puis indiquez la zone à suivre (par exemple FR, DE ou US-CAL-CISO). Une clé gratuite ne couvre qu'UNE zone : indiquez celle affichée à côté d'elle, sinon chaque requête répond 401. L'offre gratuite fournit l'intensité carbone et la part décarbonée ; la part renouvelable demande une offre payante et reste sinon vide."
+        "fr": "Electricity Maps publie l'intensité carbone des réseaux électriques dans le monde. Créez un compte gratuit sur le portail, puis dans Settings > Access activez l'offre \"Home Assistant\" : c'est la gratuite, personnelle et non commerciale (Trial et Academic sont les autres onglets). Créez votre clé dans Settings > API keys, collez-la ci-dessous, puis indiquez la zone à suivre (par exemple FR, DE ou US-CAL-CISO). Une clé gratuite ne couvre qu'UNE zone : indiquez celle affichée à côté d'elle, sinon chaque requête répond 401. L'offre gratuite fournit l'intensité carbone et la part décarbonée ; la part renouvelable demande une offre payante et reste sinon vide.",
+        "de": "Electricity Maps veröffentlicht die CO₂-Intensität der Stromnetze weltweit. Erstelle ein kostenloses Konto im Portal und aktiviere dann unter Settings > Access den Tarif \"Home Assistant\": Das ist der kostenlose, private und nicht kommerzielle (Trial und Academic sind die anderen Reiter). Erstelle deinen Schlüssel unter Settings > API keys, füge ihn unten ein und gib dann die zu verfolgende Zone an (zum Beispiel FR, DE oder US-CAL-CISO). Ein kostenloser Schlüssel deckt nur EINE Zone ab: Gib die daneben angezeigte Zone an, sonst antwortet jede Anfrage mit 401. Der kostenlose Tarif liefert die CO₂-Intensität und den CO₂-freien Anteil; der erneuerbare Anteil erfordert einen kostenpflichtigen Tarif und bleibt sonst leer.",
+        "es": "Electricity Maps publica la intensidad de carbono de las redes eléctricas de todo el mundo. Cree una cuenta gratuita en el portal y, en Settings > Access, active el plan \"Home Assistant\": es el gratuito, personal y no comercial (Trial y Academic son las otras pestañas). Cree su clave en Settings > API keys, péguela abajo e indique la zona que desea seguir (por ejemplo FR, DE o US-CAL-CISO). Una clave gratuita solo cubre UNA zona: indique la que aparece junto a ella, o cada petición responderá 401. El plan gratuito ofrece la intensidad de carbono y la cuota sin carbono; la cuota renovable requiere un plan de pago y, si no, queda vacía."
       },
       "links": [
         {
           "url": "https://portal.electricitymaps.com/",
           "label": {
             "en": "Portal: activate Home Assistant access",
-            "fr": "Portail : activer l'accès Home Assistant"
+            "fr": "Portail : activer l'accès Home Assistant",
+            "de": "Portal: Home-Assistant-Zugang aktivieren",
+            "es": "Portal: activar el acceso Home Assistant"
           }
         },
         {
           "url": "https://api.electricitymaps.com/v3/zones",
           "label": {
             "en": "List of available zones",
-            "fr": "Liste des zones disponibles"
+            "fr": "Liste des zones disponibles",
+            "de": "Liste der verfügbaren Zonen",
+            "es": "Lista de zonas disponibles"
           }
         }
       ]
@@ -46,16 +56,22 @@
       "type": "secret",
       "label": {
         "en": "API token",
-        "fr": "Token API"
+        "fr": "Token API",
+        "de": "API-Token",
+        "es": "Token de API"
       },
       "description": {
         "en": "API key created in the portal under the free \"Home Assistant\" access.",
-        "fr": "Clé API créée sur le portail avec l'accès gratuit \"Home Assistant\"."
+        "fr": "Clé API créée sur le portail avec l'accès gratuit \"Home Assistant\".",
+        "de": "Im Portal mit dem kostenlosen \"Home Assistant\"-Zugang erstellter API-Schlüssel.",
+        "es": "Clave de API creada en el portal con el acceso gratuito \"Home Assistant\"."
       },
       "required": true,
       "placeholder": {
         "en": "Your Electricity Maps token",
-        "fr": "Votre token Electricity Maps"
+        "fr": "Votre token Electricity Maps",
+        "de": "Dein Electricity-Maps-Token",
+        "es": "Su token de Electricity Maps"
       }
     },
     {
@@ -63,17 +79,23 @@
       "type": "string",
       "label": {
         "en": "Zone",
-        "fr": "Zone"
+        "fr": "Zone",
+        "de": "Zone",
+        "es": "Zona"
       },
       "description": {
         "en": "Identifier of the grid zone to follow, e.g. FR, DE, US-CAL-CISO. Copy the zone shown next to your key in the portal: a free Home Assistant key only covers that one.",
-        "fr": "Identifiant de la zone à suivre, par exemple FR, DE, US-CAL-CISO. Recopiez la zone affichée à côté de votre clé sur le portail : une clé Home Assistant gratuite ne couvre que celle-là."
+        "fr": "Identifiant de la zone à suivre, par exemple FR, DE, US-CAL-CISO. Recopiez la zone affichée à côté de votre clé sur le portail : une clé Home Assistant gratuite ne couvre que celle-là.",
+        "de": "Kennung der zu verfolgenden Netzzone, z. B. FR, DE, US-CAL-CISO. Übernimm die Zone, die im Portal neben deinem Schlüssel angezeigt wird: Ein kostenloser Home-Assistant-Schlüssel deckt nur diese ab.",
+        "es": "Identificador de la zona de red que desea seguir, p. ej. FR, DE, US-CAL-CISO. Copie la zona que aparece junto a su clave en el portal: una clave gratuita Home Assistant solo cubre esa."
       },
       "required": true,
       "default": "FR",
       "placeholder": {
         "en": "FR",
-        "fr": "FR"
+        "fr": "FR",
+        "de": "FR",
+        "es": "FR"
       }
     },
     {
@@ -81,11 +103,15 @@
       "type": "number",
       "label": {
         "en": "Refresh interval (s)",
-        "fr": "Intervalle de rafraîchissement (s)"
+        "fr": "Intervalle de rafraîchissement (s)",
+        "de": "Aktualisierungsintervall (s)",
+        "es": "Intervalo de actualización (s)"
       },
       "description": {
         "en": "How often the zone is polled, in seconds. Electricity Maps refreshes about once an hour and free plans have a monthly request quota: 900 s is a good balance.",
-        "fr": "Fréquence d'interrogation de la zone, en secondes. Electricity Maps se met à jour environ une fois par heure et les offres gratuites ont un quota mensuel de requêtes : 900 s est un bon compromis."
+        "fr": "Fréquence d'interrogation de la zone, en secondes. Electricity Maps se met à jour environ une fois par heure et les offres gratuites ont un quota mensuel de requêtes : 900 s est un bon compromis.",
+        "de": "Wie oft die Zone abgefragt wird, in Sekunden. Electricity Maps aktualisiert etwa einmal pro Stunde und kostenlose Tarife haben ein monatliches Anfragekontingent: 900 s sind ein guter Kompromiss.",
+        "es": "Frecuencia con la que se consulta la zona, en segundos. Electricity Maps se actualiza aproximadamente una vez por hora y los planes gratuitos tienen una cuota mensual de peticiones: 900 s es un buen equilibrio."
       },
       "required": false,
       "default": 900,
@@ -98,7 +124,9 @@
       "key": "test_connection",
       "label": {
         "en": "Test the connection",
-        "fr": "Tester la connexion"
+        "fr": "Tester la connexion",
+        "de": "Verbindung testen",
+        "es": "Probar la conexión"
       },
       "timeout_seconds": 30
     }
@@ -108,11 +136,15 @@
       "key": "grid_carbon",
       "label": {
         "en": "Grid carbon",
-        "fr": "Carbone du réseau"
+        "fr": "Carbone du réseau",
+        "de": "Netz-CO₂",
+        "es": "Carbono de la red"
       },
       "description": {
         "en": "Carbon intensity of your zone right now, its level and its 24 h history.",
-        "fr": "Intensité carbone de votre zone en ce moment, son niveau et son historique 24 h."
+        "fr": "Intensité carbone de votre zone en ce moment, son niveau et son historique 24 h.",
+        "de": "Aktuelle CO₂-Intensität deiner Zone, ihre Stufe und ihr 24-h-Verlauf.",
+        "es": "Intensidad de carbono actual de su zona, su nivel y su historial de 24 h."
       },
       "icon": "zap",
       "action_timeout_seconds": 60
@@ -123,11 +155,15 @@
       "key": "carbon_level_changed",
       "label": {
         "en": "Grid carbon level changed",
-        "fr": "Le niveau carbone du réseau a changé"
+        "fr": "Le niveau carbone du réseau a changé",
+        "de": "CO₂-Stufe des Netzes hat sich geändert",
+        "es": "El nivel de carbono de la red ha cambiado"
       },
       "description": {
         "en": "The carbon intensity of your zone moved from one level to another. Fires once per change, not on every refresh. Leave the filters empty to react to every change.",
-        "fr": "L'intensité carbone de votre zone est passée d'un niveau à un autre. Se déclenche une fois par changement, pas à chaque rafraîchissement. Laissez les filtres vides pour réagir à tous les changements."
+        "fr": "L'intensité carbone de votre zone est passée d'un niveau à un autre. Se déclenche une fois par changement, pas à chaque rafraîchissement. Laissez les filtres vides pour réagir à tous les changements.",
+        "de": "Die CO₂-Intensität deiner Zone ist von einer Stufe in eine andere gewechselt. Wird einmal pro Änderung ausgelöst, nicht bei jeder Aktualisierung. Lass die Filter leer, um auf jede Änderung zu reagieren.",
+        "es": "La intensidad de carbono de su zona ha pasado de un nivel a otro. Se activa una vez por cambio, no en cada actualización. Deje los filtros vacíos para reaccionar a todos los cambios."
       },
       "fields": [
         {
@@ -135,46 +171,60 @@
           "type": "multi_select",
           "label": {
             "en": "New level",
-            "fr": "Nouveau niveau"
+            "fr": "Nouveau niveau",
+            "de": "Neue Stufe",
+            "es": "Nuevo nivel"
           },
           "description": {
             "en": "Only react when the grid reaches one of these levels.",
-            "fr": "Ne réagir que lorsque le réseau atteint l'un de ces niveaux."
+            "fr": "Ne réagir que lorsque le réseau atteint l'un de ces niveaux.",
+            "de": "Nur reagieren, wenn das Netz eine dieser Stufen erreicht.",
+            "es": "Reaccionar solo cuando la red alcance uno de estos niveles."
           },
           "options": [
             {
               "value": "very_low",
               "label": {
                 "en": "Very low (< 100 gCO2eq/kWh)",
-                "fr": "Très faible (< 100 gCO2eq/kWh)"
+                "fr": "Très faible (< 100 gCO2eq/kWh)",
+                "de": "Sehr niedrig (< 100 gCO2eq/kWh)",
+                "es": "Muy bajo (< 100 gCO2eq/kWh)"
               }
             },
             {
               "value": "low",
               "label": {
                 "en": "Low (100-200 gCO2eq/kWh)",
-                "fr": "Faible (100-200 gCO2eq/kWh)"
+                "fr": "Faible (100-200 gCO2eq/kWh)",
+                "de": "Niedrig (100-200 gCO2eq/kWh)",
+                "es": "Bajo (100-200 gCO2eq/kWh)"
               }
             },
             {
               "value": "moderate",
               "label": {
                 "en": "Moderate (200-400 gCO2eq/kWh)",
-                "fr": "Modéré (200-400 gCO2eq/kWh)"
+                "fr": "Modéré (200-400 gCO2eq/kWh)",
+                "de": "Mittel (200-400 gCO2eq/kWh)",
+                "es": "Moderado (200-400 gCO2eq/kWh)"
               }
             },
             {
               "value": "high",
               "label": {
                 "en": "High (400-600 gCO2eq/kWh)",
-                "fr": "Élevé (400-600 gCO2eq/kWh)"
+                "fr": "Élevé (400-600 gCO2eq/kWh)",
+                "de": "Hoch (400-600 gCO2eq/kWh)",
+                "es": "Alto (400-600 gCO2eq/kWh)"
               }
             },
             {
               "value": "very_high",
               "label": {
                 "en": "Very high (> 600 gCO2eq/kWh)",
-                "fr": "Très élevé (> 600 gCO2eq/kWh)"
+                "fr": "Très élevé (> 600 gCO2eq/kWh)",
+                "de": "Sehr hoch (> 600 gCO2eq/kWh)",
+                "es": "Muy alto (> 600 gCO2eq/kWh)"
               }
             }
           ]
@@ -184,25 +234,33 @@
           "type": "multi_select",
           "label": {
             "en": "Direction",
-            "fr": "Sens"
+            "fr": "Sens",
+            "de": "Richtung",
+            "es": "Sentido"
           },
           "description": {
             "en": "Only react when the grid gets cleaner, or only when it gets dirtier.",
-            "fr": "Ne réagir que lorsque le réseau devient plus propre, ou seulement plus sale."
+            "fr": "Ne réagir que lorsque le réseau devient plus propre, ou seulement plus sale.",
+            "de": "Nur reagieren, wenn das Netz sauberer wird, oder nur, wenn es schmutziger wird.",
+            "es": "Reaccionar solo cuando la red se vuelva más limpia, o solo cuando se vuelva más sucia."
           },
           "options": [
             {
               "value": "cleaner",
               "label": {
                 "en": "The grid got cleaner",
-                "fr": "Le réseau est devenu plus propre"
+                "fr": "Le réseau est devenu plus propre",
+                "de": "Das Netz ist sauberer geworden",
+                "es": "La red se ha vuelto más limpia"
               }
             },
             {
               "value": "dirtier",
               "label": {
                 "en": "The grid got dirtier",
-                "fr": "Le réseau est devenu plus sale"
+                "fr": "Le réseau est devenu plus sale",
+                "de": "Das Netz ist schmutziger geworden",
+                "es": "La red se ha vuelto más sucia"
               }
             }
           ]
@@ -214,7 +272,9 @@
           "type": "string",
           "label": {
             "en": "Zone",
-            "fr": "Zone"
+            "fr": "Zone",
+            "de": "Zone",
+            "es": "Zona"
           }
         },
         {
@@ -222,7 +282,9 @@
           "type": "string",
           "label": {
             "en": "New level",
-            "fr": "Nouveau niveau"
+            "fr": "Nouveau niveau",
+            "de": "Neue Stufe",
+            "es": "Nuevo nivel"
           }
         },
         {
@@ -230,7 +292,9 @@
           "type": "string",
           "label": {
             "en": "Previous level",
-            "fr": "Niveau précédent"
+            "fr": "Niveau précédent",
+            "de": "Vorherige Stufe",
+            "es": "Nivel anterior"
           }
         },
         {
@@ -238,7 +302,9 @@
           "type": "string",
           "label": {
             "en": "Direction",
-            "fr": "Sens"
+            "fr": "Sens",
+            "de": "Richtung",
+            "es": "Sentido"
           }
         },
         {
@@ -246,7 +312,9 @@
           "type": "number",
           "label": {
             "en": "Carbon intensity (gCO2eq/kWh)",
-            "fr": "Intensité carbone (gCO2eq/kWh)"
+            "fr": "Intensité carbone (gCO2eq/kWh)",
+            "de": "CO₂-Intensität (gCO2eq/kWh)",
+            "es": "Intensidad de carbono (gCO2eq/kWh)"
           }
         },
         {
@@ -254,7 +322,9 @@
           "type": "number",
           "label": {
             "en": "Carbon-free electricity (%)",
-            "fr": "Électricité décarbonée (%)"
+            "fr": "Électricité décarbonée (%)",
+            "de": "CO₂-freier Strom (%)",
+            "es": "Electricidad sin carbono (%)"
           }
         },
         {
@@ -262,7 +332,9 @@
           "type": "number",
           "label": {
             "en": "Renewable electricity (%)",
-            "fr": "Électricité renouvelable (%)"
+            "fr": "Électricité renouvelable (%)",
+            "de": "Erneuerbarer Strom (%)",
+            "es": "Electricidad renovable (%)"
           }
         }
       ]
@@ -273,11 +345,15 @@
       "key": "get_grid_data",
       "label": {
         "en": "Get the grid carbon data",
-        "fr": "Lire les données carbone du réseau"
+        "fr": "Lire les données carbone du réseau",
+        "de": "CO₂-Daten des Netzes abrufen",
+        "es": "Obtener los datos de carbono de la red"
       },
       "description": {
         "en": "Hands the latest reading of your zone to the next actions of the scene.",
-        "fr": "Transmet la dernière mesure de votre zone aux actions suivantes de la scène."
+        "fr": "Transmet la dernière mesure de votre zone aux actions suivantes de la scène.",
+        "de": "Übergibt die letzte Messung deiner Zone an die folgenden Aktionen der Szene.",
+        "es": "Pasa la última medición de su zona a las siguientes acciones de la escena."
       },
       "timeout_seconds": 60,
       "fields": [
@@ -286,11 +362,15 @@
           "type": "boolean",
           "label": {
             "en": "Read Electricity Maps first",
-            "fr": "Interroger Electricity Maps d'abord"
+            "fr": "Interroger Electricity Maps d'abord",
+            "de": "Zuerst Electricity Maps abfragen",
+            "es": "Consultar primero Electricity Maps"
           },
           "description": {
             "en": "Off: use the last value read by the integration, which costs no API request. On: read the API now — the data only changes about once an hour, and free plans have a monthly request quota.",
-            "fr": "Désactivé : utiliser la dernière valeur lue par l'intégration, sans requête API. Activé : interroger l'API maintenant — les données ne changent qu'environ une fois par heure, et les offres gratuites ont un quota mensuel de requêtes."
+            "fr": "Désactivé : utiliser la dernière valeur lue par l'intégration, sans requête API. Activé : interroger l'API maintenant — les données ne changent qu'environ une fois par heure, et les offres gratuites ont un quota mensuel de requêtes.",
+            "de": "Aus: den letzten von der Integration gelesenen Wert verwenden, ohne API-Anfrage. Ein: die API jetzt abfragen — die Daten ändern sich nur etwa einmal pro Stunde, und kostenlose Tarife haben ein monatliches Anfragekontingent.",
+            "es": "Desactivado: usar el último valor leído por la integración, sin ninguna petición a la API. Activado: consultar la API ahora — los datos solo cambian aproximadamente una vez por hora y los planes gratuitos tienen una cuota mensual de peticiones."
           },
           "default": false
         }
@@ -301,7 +381,9 @@
           "type": "string",
           "label": {
             "en": "Zone",
-            "fr": "Zone"
+            "fr": "Zone",
+            "de": "Zone",
+            "es": "Zona"
           }
         },
         {
@@ -309,7 +391,9 @@
           "type": "string",
           "label": {
             "en": "Carbon level",
-            "fr": "Niveau carbone"
+            "fr": "Niveau carbone",
+            "de": "CO₂-Stufe",
+            "es": "Nivel de carbono"
           }
         },
         {
@@ -317,7 +401,9 @@
           "type": "number",
           "label": {
             "en": "Carbon intensity (gCO2eq/kWh)",
-            "fr": "Intensité carbone (gCO2eq/kWh)"
+            "fr": "Intensité carbone (gCO2eq/kWh)",
+            "de": "CO₂-Intensität (gCO2eq/kWh)",
+            "es": "Intensidad de carbono (gCO2eq/kWh)"
           }
         },
         {
@@ -325,7 +411,9 @@
           "type": "number",
           "label": {
             "en": "Carbon-free electricity (%)",
-            "fr": "Électricité décarbonée (%)"
+            "fr": "Électricité décarbonée (%)",
+            "de": "CO₂-freier Strom (%)",
+            "es": "Electricidad sin carbono (%)"
           }
         },
         {
@@ -333,7 +421,9 @@
           "type": "number",
           "label": {
             "en": "Renewable electricity (%)",
-            "fr": "Électricité renouvelable (%)"
+            "fr": "Électricité renouvelable (%)",
+            "de": "Erneuerbarer Strom (%)",
+            "es": "Electricidad renovable (%)"
           }
         },
         {
@@ -341,7 +431,9 @@
           "type": "number",
           "label": {
             "en": "Age of the reading (s)",
-            "fr": "Âge de la mesure (s)"
+            "fr": "Âge de la mesure (s)",
+            "de": "Alter der Messung (s)",
+            "es": "Antigüedad de la medición (s)"
           }
         }
       ]

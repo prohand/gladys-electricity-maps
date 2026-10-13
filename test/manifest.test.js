@@ -106,12 +106,55 @@ test('section fields are purely presentational', () => {
   }
 });
 
+// Gladys speaks English, French, German and Spanish: the front picks the
+// reader's language in every multi-language object, and falls back on English.
+const LANGUAGES = ['en', 'fr', 'de', 'es'];
+
+/** Every multi-language object of the manifest, with its path. */
+function multiLanguageTexts(node, path = 'manifest', found = []) {
+  if (Array.isArray(node)) {
+    node.forEach((child, index) => multiLanguageTexts(child, `${path}[${index}]`, found));
+  } else if (node && typeof node === 'object') {
+    if (typeof node.en === 'string') {
+      found.push([path, node]);
+    } else {
+      for (const [key, child] of Object.entries(node)) {
+        multiLanguageTexts(child, `${path}.${key}`, found);
+      }
+    }
+  }
+  return found;
+}
+
+test('every manifest text is written in English, French, German and Spanish', () => {
+  const texts = multiLanguageTexts(manifest);
+  assert.ok(texts.length > 40, 'the walk must reach the nested texts');
+  for (const [path, text] of texts) {
+    assert.deepEqual(Object.keys(text), LANGUAGES, `${path} must carry ${LANGUAGES.join(', ')}`);
+    for (const lang of LANGUAGES) {
+      assert.equal(typeof text[lang], 'string', `${path}.${lang}`);
+      assert.ok(text[lang].trim().length > 0, `${path}.${lang} must not be empty`);
+    }
+  }
+});
+
+test('the section texts respect the store limit in every language', () => {
+  for (const section of manifest.config_schema.filter((f) => f.type === 'section')) {
+    for (const lang of LANGUAGES) {
+      assert.ok(section.description[lang].length <= 1000, `${section.key}.description.${lang}`);
+    }
+  }
+});
+
 test('the card texts respect the store limits', () => {
   assert.ok(manifest.name.length >= 3 && manifest.name.length <= 30);
   for (const [lang, text] of Object.entries(manifest.description)) {
     assert.ok(text.length >= 10 && text.length <= 100, `description.${lang} must be 10-100 chars`);
   }
   assert.ok(manifest.description.en, 'the English description is mandatory');
+  for (const lang of LANGUAGES) {
+    assert.ok(manifest.description[lang], `description.${lang} is expected`);
+  }
 });
 
 test('the manifest version matches the docker image tag', () => {
