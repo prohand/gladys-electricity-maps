@@ -260,8 +260,8 @@ Deux causes possibles :
    mettez Gladys à jour, puis reprenez le point 2.
 2. **L'appareil a été créé avant.** Gladys ne réécrit pas la catégorie des
    fonctionnalités d'un appareil déjà créé : supprimez l'appareil
-   `Electricity Maps (...)` dans **Réglages → Appareils**, puis ajoutez-le à
-   nouveau depuis l'onglet **Découverte** de l'intégration. L'historique de
+   `Electricity Maps (...)` dans l'onglet **Appareils** de l'intégration, puis ajoutez-le à
+   nouveau depuis son onglet **Découverte**. L'historique de
    l'ancien appareil est perdu, les valeurs repartent de zéro.
 
 L'intégration journalise tout ce qu'elle fait : consultez les logs de

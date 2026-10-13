@@ -262,8 +262,8 @@ Dos causas posibles:
    actualice Gladys y después siga el paso 2.
 2. **El dispositivo se creó antes.** Gladys nunca reescribe las categorías de
    las funcionalidades de un dispositivo ya creado: elimine el dispositivo
-   `Electricity Maps (...)` en **Configuración → Dispositivos** y vuelva a
-   añadirlo desde la pestaña **Descubrir** de la integración. El historial del
+   `Electricity Maps (...)` en la pestaña **Dispositivos** de la integración y vuelva a
+   añadirlo desde su pestaña **Descubrir**. El historial del
    dispositivo antiguo se pierde y los valores empiezan de cero.
 
 La integración registra todo lo que hace: consulte los registros de la

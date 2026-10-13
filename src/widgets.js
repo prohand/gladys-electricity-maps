@@ -107,7 +107,7 @@ async function buildGridCarbonContent(gladys, config) {
           text: {
             en: 'Set your Electricity Maps API token and zone in the integration configuration.',
             fr: "Renseignez votre token API Electricity Maps et votre zone dans la configuration de l'intégration.",
-            de: 'Geben Sie Ihr Electricity-Maps-API-Token und Ihre Zone in der Konfiguration der Integration ein.',
+            de: 'Gib dein Electricity-Maps-API-Token und deine Zone in der Konfiguration der Integration ein.',
             es: 'Indique su token de API de Electricity Maps y su zona en la configuración de la integración.',
           },
         },
@@ -164,9 +164,9 @@ async function buildGridCarbonContent(gladys, config) {
       type: 'text',
       variant: 'body',
       text: {
-        en: 'Add the Electricity Maps device from the Discovery screen to get the history chart here.',
+        en: 'Add the Electricity Maps device from the Discover tab to get the history chart here.',
         fr: "Ajoutez l'appareil Electricity Maps depuis l'écran Découverte pour obtenir ici le graphique d'historique.",
-        de: 'Fügen Sie das Electricity-Maps-Gerät über den Reiter „Entdecken“ hinzu, um hier das Verlaufsdiagramm zu erhalten.',
+        de: 'Füge das Electricity-Maps-Gerät über den Reiter „Entdecken“ hinzu, um hier das Verlaufsdiagramm zu erhalten.',
         es: 'Añada el dispositivo Electricity Maps desde la pestaña «Descubrir» para obtener aquí el gráfico del historial.',
       },
     });

@@ -46,7 +46,7 @@ const poller = createPoller(refreshAllDevices);
 const NOT_CONFIGURED_MESSAGE = {
   en: 'Set your Electricity Maps API token and zone in the configuration.',
   fr: 'Renseignez votre token API Electricity Maps et votre zone dans la configuration.',
-  de: 'Geben Sie Ihr Electricity-Maps-API-Token und Ihre Zone in der Konfiguration ein.',
+  de: 'Gib dein Electricity-Maps-API-Token und deine Zone in der Konfiguration ein.',
   es: 'Indique su token de API de Electricity Maps y su zona en la configuración.',
 };
 
@@ -276,7 +276,7 @@ gladys.on('connected', async () => {
       .setConnectionStatus(false, {
         en: 'Initialization failed, check the integration logs.',
         fr: "L'initialisation a échoué, consultez les logs de l'intégration.",
-        de: 'Die Initialisierung ist fehlgeschlagen, prüfen Sie die Protokolle der Integration.',
+        de: 'Die Initialisierung ist fehlgeschlagen, prüfe die Protokolle der Integration.',
         es: 'La inicialización ha fallado, consulte los registros de la integración.',
       })
       .catch(() => {});

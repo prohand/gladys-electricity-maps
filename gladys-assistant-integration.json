@@ -5,7 +5,7 @@
   "description": {
     "en": "Live carbon intensity and carbon-free share of your electricity grid.",
     "fr": "Intensité carbone et part d'électricité décarbonée de votre réseau.",
-    "de": "CO₂-Intensität und CO₂-freier Anteil Ihres Stromnetzes in Echtzeit.",
+    "de": "CO₂-Intensität und CO₂-freier Anteil deines Stromnetzes in Echtzeit.",
     "es": "Intensidad de carbono y cuota sin carbono de su red eléctrica, en directo."
   },
   "version": "2.2.5",
@@ -27,7 +27,7 @@
       "description": {
         "en": "Electricity Maps publishes the carbon intensity of electricity grids worldwide. Create a free account on the portal, then in Settings > Access activate the \"Home Assistant\" plan: it is the free, personal and non-commercial one (Trial and Academic are the other tabs). Create your key in Settings > API keys, paste it below, then set the zone you want to follow (for example FR, DE or US-CAL-CISO). A free key covers ONE zone: use the zone shown next to it, or every request answers 401. The free plan serves the carbon intensity and the carbon-free share; the renewable share needs a paid plan and stays empty otherwise.",
         "fr": "Electricity Maps publie l'intensité carbone des réseaux électriques dans le monde. Créez un compte gratuit sur le portail, puis dans Settings > Access activez l'offre \"Home Assistant\" : c'est la gratuite, personnelle et non commerciale (Trial et Academic sont les autres onglets). Créez votre clé dans Settings > API keys, collez-la ci-dessous, puis indiquez la zone à suivre (par exemple FR, DE ou US-CAL-CISO). Une clé gratuite ne couvre qu'UNE zone : indiquez celle affichée à côté d'elle, sinon chaque requête répond 401. L'offre gratuite fournit l'intensité carbone et la part décarbonée ; la part renouvelable demande une offre payante et reste sinon vide.",
-        "de": "Electricity Maps veröffentlicht die CO₂-Intensität der Stromnetze weltweit. Erstellen Sie ein kostenloses Konto im Portal und aktivieren Sie dann unter Settings > Access den Tarif \"Home Assistant\": Das ist der kostenlose, private und nicht kommerzielle (Trial und Academic sind die anderen Reiter). Erstellen Sie Ihren Schlüssel unter Settings > API keys, fügen Sie ihn unten ein und geben Sie dann die zu verfolgende Zone an (zum Beispiel FR, DE oder US-CAL-CISO). Ein kostenloser Schlüssel deckt nur EINE Zone ab: Geben Sie die daneben angezeigte Zone an, sonst antwortet jede Anfrage mit 401. Der kostenlose Tarif liefert die CO₂-Intensität und den CO₂-freien Anteil; der erneuerbare Anteil erfordert einen kostenpflichtigen Tarif und bleibt sonst leer.",
+        "de": "Electricity Maps veröffentlicht die CO₂-Intensität der Stromnetze weltweit. Erstelle ein kostenloses Konto im Portal und aktiviere dann unter Settings > Access den Tarif \"Home Assistant\": Das ist der kostenlose, private und nicht kommerzielle (Trial und Academic sind die anderen Reiter). Erstelle deinen Schlüssel unter Settings > API keys, füge ihn unten ein und gib dann die zu verfolgende Zone an (zum Beispiel FR, DE oder US-CAL-CISO). Ein kostenloser Schlüssel deckt nur EINE Zone ab: Gib die daneben angezeigte Zone an, sonst antwortet jede Anfrage mit 401. Der kostenlose Tarif liefert die CO₂-Intensität und den CO₂-freien Anteil; der erneuerbare Anteil erfordert einen kostenpflichtigen Tarif und bleibt sonst leer.",
         "es": "Electricity Maps publica la intensidad de carbono de las redes eléctricas de todo el mundo. Cree una cuenta gratuita en el portal y, en Settings > Access, active el plan \"Home Assistant\": es el gratuito, personal y no comercial (Trial y Academic son las otras pestañas). Cree su clave en Settings > API keys, péguela abajo e indique la zona que desea seguir (por ejemplo FR, DE o US-CAL-CISO). Una clave gratuita solo cubre UNA zona: indique la que aparece junto a ella, o cada petición responderá 401. El plan gratuito ofrece la intensidad de carbono y la cuota sin carbono; la cuota renovable requiere un plan de pago y, si no, queda vacía."
       },
       "links": [
@@ -70,7 +70,7 @@
       "placeholder": {
         "en": "Your Electricity Maps token",
         "fr": "Votre token Electricity Maps",
-        "de": "Ihr Electricity-Maps-Token",
+        "de": "Dein Electricity-Maps-Token",
         "es": "Su token de Electricity Maps"
       }
     },
@@ -86,7 +86,7 @@
       "description": {
         "en": "Identifier of the grid zone to follow, e.g. FR, DE, US-CAL-CISO. Copy the zone shown next to your key in the portal: a free Home Assistant key only covers that one.",
         "fr": "Identifiant de la zone à suivre, par exemple FR, DE, US-CAL-CISO. Recopiez la zone affichée à côté de votre clé sur le portail : une clé Home Assistant gratuite ne couvre que celle-là.",
-        "de": "Kennung der zu verfolgenden Netzzone, z. B. FR, DE, US-CAL-CISO. Übernehmen Sie die Zone, die im Portal neben Ihrem Schlüssel angezeigt wird: Ein kostenloser Home-Assistant-Schlüssel deckt nur diese ab.",
+        "de": "Kennung der zu verfolgenden Netzzone, z. B. FR, DE, US-CAL-CISO. Übernimm die Zone, die im Portal neben deinem Schlüssel angezeigt wird: Ein kostenloser Home-Assistant-Schlüssel deckt nur diese ab.",
         "es": "Identificador de la zona de red que desea seguir, p. ej. FR, DE, US-CAL-CISO. Copie la zona que aparece junto a su clave en el portal: una clave gratuita Home Assistant solo cubre esa."
       },
       "required": true,
@@ -143,7 +143,7 @@
       "description": {
         "en": "Carbon intensity of your zone right now, its level and its 24 h history.",
         "fr": "Intensité carbone de votre zone en ce moment, son niveau et son historique 24 h.",
-        "de": "Aktuelle CO₂-Intensität Ihrer Zone, ihre Stufe und ihr 24-h-Verlauf.",
+        "de": "Aktuelle CO₂-Intensität deiner Zone, ihre Stufe und ihr 24-h-Verlauf.",
         "es": "Intensidad de carbono actual de su zona, su nivel y su historial de 24 h."
       },
       "icon": "zap",
@@ -162,7 +162,7 @@
       "description": {
         "en": "The carbon intensity of your zone moved from one level to another. Fires once per change, not on every refresh. Leave the filters empty to react to every change.",
         "fr": "L'intensité carbone de votre zone est passée d'un niveau à un autre. Se déclenche une fois par changement, pas à chaque rafraîchissement. Laissez les filtres vides pour réagir à tous les changements.",
-        "de": "Die CO₂-Intensität Ihrer Zone ist von einer Stufe in eine andere gewechselt. Wird einmal pro Änderung ausgelöst, nicht bei jeder Aktualisierung. Lassen Sie die Filter leer, um auf jede Änderung zu reagieren.",
+        "de": "Die CO₂-Intensität deiner Zone ist von einer Stufe in eine andere gewechselt. Wird einmal pro Änderung ausgelöst, nicht bei jeder Aktualisierung. Lass die Filter leer, um auf jede Änderung zu reagieren.",
         "es": "La intensidad de carbono de su zona ha pasado de un nivel a otro. Se activa una vez por cambio, no en cada actualización. Deje los filtros vacíos para reaccionar a todos los cambios."
       },
       "fields": [
@@ -352,7 +352,7 @@
       "description": {
         "en": "Hands the latest reading of your zone to the next actions of the scene.",
         "fr": "Transmet la dernière mesure de votre zone aux actions suivantes de la scène.",
-        "de": "Übergibt die letzte Messung Ihrer Zone an die folgenden Aktionen der Szene.",
+        "de": "Übergibt die letzte Messung deiner Zone an die folgenden Aktionen der Szene.",
         "es": "Pasa la última medición de su zona a las siguientes acciones de la escena."
       },
       "timeout_seconds": 60,

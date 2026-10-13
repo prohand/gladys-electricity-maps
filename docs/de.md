@@ -2,16 +2,16 @@
 
 Diese Integration liest die **CO₂-Intensität des Stromnetzes** bei
 [Electricity Maps](https://www.electricitymaps.com/) aus und stellt sie in Gladys
-als Sensoren bereit, die Sie als Diagramm anzeigen und in Szenen verwenden
-können, um Ihre Geräte dann laufen zu lassen, wenn der Strom am saubersten ist.
+als Sensoren bereit, die du als Diagramm anzeigen und in Szenen verwenden
+kannst, um deine Geräte dann laufen zu lassen, wenn der Strom am saubersten ist.
 
 Außerdem bringt sie ein **Widget** für das Dashboard, einen Szenen-**Auslöser**
 und eine Szenen-**Aktion** mit. Sie erfordert **Gladys 5.1.0 oder neuer**.
 
-## Was Sie erhalten
+## Was du erhältst
 
 Ein Gerät, benannt nach der verfolgten Zone (zum Beispiel
-`Electricity Maps (FR)`), mit zwei oder drei Sensoren je nach Ihrem Tarif:
+`Electricity Maps (FR)`), mit zwei oder drei Sensoren je nach deinem Tarif:
 
 | Sensor                    | Einheit    | Bedeutung                                              | Kostenloser Tarif |
 | ------------------------- | ---------- | ------------------------------------------------------ | ----------------- |
@@ -19,7 +19,7 @@ Ein Gerät, benannt nach der verfolgten Zone (zum Beispiel
 | CO₂-freier Strom          | %          | Anteil aus erneuerbaren Energien **und** Kernkraft     | Ja                |
 | Erneuerbarer Strom        | %          | Anteil ausschließlich aus erneuerbaren Energien        | Nein              |
 
-Alle behalten ihren Verlauf und erscheinen daher als Diagramme auf Ihrem
+Alle behalten ihren Verlauf und erscheinen daher als Diagramme auf deinem
 Dashboard. Electricity Maps liefert einen Wert pro Stunde: Eine Abfrage, die
 die bereits gespeicherte Stunde mit denselben Werten zurückbringt, wird nicht
 erneut geschrieben (sie wird höchstens alle 3 Stunden erneut gesendet, wenn
@@ -28,10 +28,10 @@ enthält daher etwa einen Punkt pro Stunde, unabhängig vom
 Aktualisierungsintervall.
 
 Sie gehören zur Gladys-Kategorie **Netz-CO₂-Sensor**: Sie verleiht ihnen ihren
-Namen, ihr Symbol und ihre Einheit in der Oberfläche. Kennt Ihre Gladys-Version
+Namen, ihr Symbol und ihre Einheit in der Oberfläche. Kennt deine Gladys-Version
 diese Kategorie noch nicht, veröffentlicht die Integration sie stattdessen als
 generische Sensoren: Sie werden dann als **„Unbekannt“** angezeigt, mit
-denselben Werten. Aktualisieren Sie Gladys, um die richtigen Bezeichnungen zu
+denselben Werten. Aktualisiere Gladys, um die richtigen Bezeichnungen zu
 erhalten.
 
 Der kostenlose **Home Assistant**-Schlüssel öffnet einen einzigen
@@ -39,14 +39,14 @@ API-Endpunkt: den, der die CO₂-Intensität und den fossilen Anteil liefert
 (daraus ergibt sich der CO₂-freie Anteil als dessen Ergänzung). Der erneuerbare
 Anteil kommt von einem anderen Endpunkt, der den kostenpflichtigen Tarifen
 vorbehalten ist: Die Integration fragt ihn **einmal** ab, bevor sie das Gerät
-veröffentlicht. Lehnt Ihr Tarif ihn ab, wird der Sensor „Erneuerbarer Strom“
+veröffentlicht. Lehnt dein Tarif ihn ab, wird der Sensor „Erneuerbarer Strom“
 **gar nicht veröffentlicht** — statt dauerhaft leer angezeigt zu werden — und
-die beiden anderen funktionieren weiter. Wechseln Sie zu einem Tarif, der die
+die beiden anderen funktionieren weiter. Wechselst du zu einem Tarif, der die
 Aufschlüsselung der Erzeugung liefert, erscheint er beim nächsten Neustart der
 Integration.
 
-Wenn Sie das Gerät bereits mit seinen drei Sensoren hinzugefügt hatten, behält
-Gladys die vorhandenen: Löschen Sie das Gerät und fügen Sie es über den Reiter
+Wenn du das Gerät bereits mit seinen drei Sensoren hinzugefügt hattest, behält
+Gladys die vorhandenen: Lösche das Gerät und füge es über den Reiter
 **Entdecken** erneut hinzu, um den leeren Sensor loszuwerden.
 
 ## Einen API-Schlüssel erhalten
@@ -54,16 +54,16 @@ Gladys die vorhandenen: Löschen Sie das Gerät und fügen Sie es über den Reit
 Der kostenlose Zugang heißt **Home Assistant** — es ist der Tarif für die
 private Hausautomation, und er funktioniert für Gladys genauso.
 
-1. Erstellen Sie ein Konto im
+1. Erstelle ein Konto im
    [Electricity-Maps-Portal](https://portal.electricitymaps.com/).
-2. Gehen Sie zu **Settings → Access** und wählen Sie den Reiter
+2. Gehe zu **Settings → Access** und wähle den Reiter
    **Home Assistant** (die anderen Reiter, _Trial_ und _Academic_, sind andere
-   Angebote). Aktivieren Sie ihn: Seine kostenlosen Nutzungsbedingungen
+   Angebote). Aktiviere ihn: Seine kostenlosen Nutzungsbedingungen
    erlauben eine private, nicht kommerzielle und nicht gewinnbringende Nutzung —
    genau das, was ein Hausautomationsserver tut.
-3. Gehen Sie zu **Settings → API keys**, erstellen Sie Ihren Schlüssel und
-   kopieren Sie ihn.
-4. Notieren Sie die neben Ihrem Schlüssel angezeigte **Zone**: Ein kostenloser
+3. Gehe zu **Settings → API keys**, erstelle deinen Schlüssel und
+   kopiere ihn.
+4. Notiere die neben deinem Schlüssel angezeigte **Zone**: Ein kostenloser
    Home-Assistant-Schlüssel deckt nur diese eine Zone ab, und Gladys muss
    wissen, welche es ist — sie benennt und identifiziert das Gerät vor dem
    ersten API-Aufruf. Zonenkennungen sehen aus wie `FR`, `DE`, `ES`, `GB` oder
@@ -72,21 +72,21 @@ private Hausautomation, und er funktioniert für Gladys genauso.
 
 ## Konfiguration
 
-1. Öffnen Sie den Reiter **Konfiguration** der Integration.
-2. Fügen Sie den mit dem Home-Assistant-Zugang erstellten **API-Schlüssel** ein.
-3. Geben Sie die zu verfolgende **Zone** an — dieselbe wie bei Ihrem Schlüssel
+1. Öffne den Reiter **Konfiguration** der Integration.
+2. Füge den mit dem Home-Assistant-Zugang erstellten **API-Schlüssel** ein.
+3. Gib die zu verfolgende **Zone** an — dieselbe wie bei deinem Schlüssel
    (standardmäßig `FR`).
-4. Passen Sie bei Bedarf das **Aktualisierungsintervall** an (standardmäßig
+4. Passe bei Bedarf das **Aktualisierungsintervall** an (standardmäßig
    900 Sekunden).
-5. Speichern Sie und klicken Sie dann auf **Verbindung testen**: Die aktuelle
-   CO₂-Intensität Ihrer Zone wird unter der Schaltfläche angezeigt.
+5. Speichere und klicke dann auf **Verbindung testen**: Die aktuelle
+   CO₂-Intensität deiner Zone wird unter der Schaltfläche angezeigt.
 6. Das Gerät erscheint im Reiter **Entdecken** und kann hinzugefügt werden.
    Solange der API-Schlüssel nicht gespeichert ist, bietet die Integration
    **überhaupt kein Gerät** an: Es könnte nur leere Sensoren zeigen.
 
 ### Aktualisierungsintervall
 
-Die Integration betreibt ihren eigenen Aktualisierungs-Timer im von Ihnen
+Die Integration betreibt ihren eigenen Aktualisierungs-Timer im von dir
 festgelegten Intervall. Electricity Maps aktualisiert seine Daten etwa
 **einmal pro Stunde**, und kostenlose Tarife haben ein monatliches
 Anfragekontingent, daher bringt eine schnellere Aktualisierung nichts. Der Wert
@@ -95,14 +95,14 @@ ist auf **300 s** (5 Minuten) bis **86 400 s** (1 Tag) begrenzt, und eine
 eine Aktualisierung aus. Eine Änderung des API-Schlüssels oder der Zone löst
 ebenfalls eine sofortige Abfrage aus.
 
-Wenn Sie das Gerät über den Reiter **Entdecken** hinzufügen, werden seine
-Sensoren sofort befüllt: Sie müssen nicht auf die nächste Aktualisierung
+Wenn du das Gerät über den Reiter **Entdecken** hinzufügst, werden seine
+Sensoren sofort befüllt: Du musst nicht auf die nächste Aktualisierung
 warten.
 
 Ist Electricity Maps überhaupt nicht erreichbar (typischerweise, weil das Netz
 direkt nach dem Start von Gladys noch nicht bereit ist), versucht es die
 Integration nach 1 Minute und dann nach 5 Minuten erneut, statt auf die nächste
-Aktualisierung zu warten; ein solcher Fehlschlag kostet keine Anfrage aus Ihrem
+Aktualisierung zu warten; ein solcher Fehlschlag kostet keine Anfrage aus deinem
 Kontingent. Antwortet Electricity Maps mit „Kontingent überschritten“ und einer
 einzuhaltenden Wartezeit, wird vor deren Ablauf nichts abgefragt.
 
@@ -119,29 +119,29 @@ Gladys gelöscht werden.
 
 ## Das Dashboard-Widget
 
-Seit Gladys 5.1 fügt die Integration der Widget-Auswahl Ihres Dashboards eine
+Seit Gladys 5.1 fügt die Integration der Widget-Auswahl deines Dashboards eine
 Karte **Netz-CO₂** hinzu. Sie zeigt:
 
 - die verfolgte **Zone**, die aktuelle **CO₂-Stufe** und die **Stunde des
   Werts** („aktuelle Stunde“, „vorherige Stunde“, „vor 3 h“): Electricity Maps
   liefert einen Wert pro Stunde, eine Abfrage um 20:47 zeigt also den Wert der
   Stunde ab 20:00;
-- eine Kachel pro Sensor (CO₂-Intensität, CO₂-freier Anteil und, falls Ihr
+- eine Kachel pro Sensor (CO₂-Intensität, CO₂-freier Anteil und, falls dein
   Tarif ihn liefert, erneuerbarer Anteil), deren **Zahl farbig** ist, je
   nachdem, was sie aussagt: Die CO₂-Intensität übernimmt die Farbe ihrer Stufe,
   die beiden Anteile gehen von Grün (ab 70 %) über Orange (ab 40 %) zu Rot —
   dieselben Farben wie die Badges der Geräteliste;
 - ein **Diagramm** der CO₂-Intensität der letzten 24 Stunden;
 - eine Schaltfläche **Aktualisieren** (fragt Electricity Maps sofort ab) und
-  einen Link zur Live-Karte Ihrer Zone.
+  einen Link zur Live-Karte deiner Zone.
 
 Die Kacheln werden bei jeder Abfrage von Electricity Maps aktualisiert: Die
 Karte wird direkt nach jeder Abfrage neu geladen, die Zahlen folgen also dem
 Takt der Sensoren.
 
-Das Diagramm stützt sich auf das Gerät: Solange Sie es nicht über den Reiter
-**Entdecken** hinzugefügt haben, zeigt die Karte trotzdem die Werte, ohne das
-Diagramm, und weist Sie darauf hin.
+Das Diagramm stützt sich auf das Gerät: Solange du es nicht über den Reiter
+**Entdecken** hinzugefügt hast, zeigt die Karte trotzdem die Werte, ohne das
+Diagramm, und weist dich darauf hin.
 
 ### Was die Farbe kostet
 
@@ -183,13 +183,13 @@ ein Wert, der genau auf einer Grenze liegt, die Stufe bei jeder Messung ändert.
 
 Im Szenen-Editor, in der Kategorie **Integrationen**:
 
-**„CO₂-Stufe des Netzes hat sich geändert“** — wird ausgelöst, wenn Ihre Zone
-von einem Bereich in einen anderen wechselt. Sie können filtern:
+**„CO₂-Stufe des Netzes hat sich geändert“** — wird ausgelöst, wenn deine Zone
+von einem Bereich in einen anderen wechselt. Du kannst filtern:
 
 - nach der **neuen Stufe** (zum Beispiel nur „Sehr niedrig“ und „Niedrig“);
 - nach der **Richtung** (das Netz ist sauberer oder schmutziger geworden).
 
-Lassen Sie einen Filter leer, um auf jeden Fall zu reagieren.
+Lass einen Filter leer, um auf jeden Fall zu reagieren.
 
 Er wird **einmal pro Änderung** ausgelöst, nicht bei jeder Aktualisierung, und
 nie bei der ersten Messung nach einem Neustart (nichts hat sich geändert, die
@@ -200,19 +200,19 @@ Die Szene kann die Werte des Ereignisses weiterverwenden:
 `carbon_intensity`, `carbon_free_percentage`, `renewable_percentage`.
 
 > Für einen einfachen Schwellenwert („wenn die Intensität unter 80 fällt“)
-> verwenden Sie den Standard-Auslöser von Gladys auf den Sensorwert: Dafür ist
+> verwende den Standard-Auslöser von Gladys auf den Sensorwert: Dafür ist
 > er da. Der Auslöser der Integration dient dem **Wechsel des Bereichs**, den
 > Gladys allein nicht ausdrücken kann.
 
 ## Szenen-Aktion
 
-**„CO₂-Daten des Netzes abrufen“** — stellt die Werte Ihrer Zone den folgenden
+**„CO₂-Daten des Netzes abrufen“** — stellt die Werte deiner Zone den folgenden
 Aktionen der Szene zur Verfügung: `zone`, `level`, `carbon_intensity`,
 `carbon_free_percentage`, `renewable_percentage` und `age_seconds` (das Alter
 der Messung, in Sekunden).
 
 Ein standardmäßig deaktiviertes Kontrollkästchen **„Zuerst Electricity Maps
-abfragen“** erzwingt eine Live-Abfrage. Lassen Sie es in den meisten Fällen
+abfragen“** erzwingt eine Live-Abfrage. Lass es in den meisten Fällen
 deaktiviert: Die Daten ändern sich nur etwa einmal pro Stunde, und kostenlose
 Tarife haben ein monatliches Anfragekontingent. Schlägt diese Live-Abfrage
 fehl, schlägt auch die Aktion fehl, statt die vorherigen Werte als frische
@@ -224,23 +224,23 @@ Widgets.
 - Die Spülmaschine starten oder das Auto laden, wenn die CO₂-Stufe „Sehr
   niedrig“ oder „Niedrig“ erreicht (Auslöser der Integration).
 - Die Spülmaschine starten oder das Auto laden, wenn die CO₂-Intensität unter
-  einen von Ihnen gewählten Schwellenwert fällt (Standard-Auslöser auf den
+  einen von dir gewählten Schwellenwert fällt (Standard-Auslöser auf den
   Sensor).
 - Sich benachrichtigen lassen, wenn der CO₂-freie Anteil 90 % übersteigt.
 - Eine Nachricht mit der aktuellen Intensität senden: die Aktion **CO₂-Daten
   des Netzes abrufen**, dann eine Benachrichtigung mit `carbon_intensity`.
 - Den eigenen Verbrauch neben der Netzintensität darstellen, um die CO₂-Kosten
-  Ihrer Gewohnheiten zu sehen.
+  deiner Gewohnheiten zu sehen.
 
 ## Fehlerbehebung
 
-| Meldung                            | Was zu tun ist                                                                   |
-| ---------------------------------- | -------------------------------------------------------------------------------- |
-| `Invalid API token ... (HTTP 401)` | Token falsch kopiert, **oder** eine andere Zone als die Ihres Schlüssels         |
-| `Zone ... not allowed (HTTP 403)`  | Ihr Tarif deckt diese Zone nicht ab — verwenden Sie Ihre Heimatzone              |
-| `Unknown zone (HTTP 404)`          | Prüfen Sie die Kennung anhand der Zonenliste                                     |
-| `quota exceeded (HTTP 429)`        | Erhöhen Sie das Aktualisierungsintervall oder warten Sie auf das neue Kontingent |
-| `Electricity Maps unreachable`     | Netzwerk- oder DNS-Problem auf dem Gladys-Host                                   |
+| Meldung                            | Was zu tun ist                                                            |
+| ---------------------------------- | ------------------------------------------------------------------------- |
+| `Invalid API token ... (HTTP 401)` | Token falsch kopiert, **oder** eine andere Zone als die deines Schlüssels |
+| `Zone ... not allowed (HTTP 403)`  | Dein Tarif deckt diese Zone nicht ab — verwende deine Heimatzone          |
+| `Unknown zone (HTTP 404)`          | Prüfe die Kennung anhand der Zonenliste                                   |
+| `quota exceeded (HTTP 429)`        | Erhöhe das Aktualisierungsintervall oder warte auf das neue Kontingent    |
+| `Electricity Maps unreachable`     | Netzwerk- oder DNS-Problem auf dem Gladys-Host                            |
 
 ### Der Wert weicht von der Electricity-Maps-Website ab
 
@@ -256,25 +256,25 @@ Das ist normal, beide zeigen nicht dasselbe:
   vorläufige Werte werden von Electricity Maps in den folgenden Stunden
   korrigiert.
 
-Vergleichen Sie dieselbe Stunde: Die Protokolle geben die Stunde des gelesenen
+Vergleiche dieselbe Stunde: Die Protokolle geben die Stunde des gelesenen
 Werts an
 (`Carbon intensity: 66 gCO₂eq/kWh (hourly value of 2026-09-22T20:00:00.000Z)`,
-UTC-Zeit), und stellen Sie die Website auf die **stündliche** Granularität um.
+UTC-Zeit), und stelle die Website auf die **stündliche** Granularität um.
 
 ### Die Sensoren zeigen weiterhin „Unbekannt“
 
 Zwei mögliche Ursachen:
 
-1. **Ihre Gladys kennt die Kategorie noch nicht.** Die Protokolle der
+1. **Deine Gladys kennt die Kategorie noch nicht.** Die Protokolle der
    Integration sagen es (`does not know the grid carbon sensors yet`):
-   Aktualisieren Sie Gladys und führen Sie dann Schritt 2 aus.
+   Aktualisiere Gladys und führe dann Schritt 2 aus.
 2. **Das Gerät wurde vorher erstellt.** Gladys schreibt die Kategorien der
-   Funktionen eines bereits erstellten Geräts nie um: Löschen Sie das Gerät
-   `Electricity Maps (...)` unter **Einstellungen → Geräte** und fügen Sie es
-   dann über den Reiter **Entdecken** der Integration erneut hinzu. Der Verlauf
+   Funktionen eines bereits erstellten Geräts nie um: Lösche das Gerät
+   `Electricity Maps (...)` im Reiter **Geräte** der Integration und füge es
+   dann über ihren Reiter **Entdecken** erneut hinzu. Der Verlauf
    des alten Geräts geht verloren, die Werte beginnen von vorn.
 
-Die Integration protokolliert alles, was sie tut: Prüfen Sie die Protokolle der
+Die Integration protokolliert alles, was sie tut: Prüfe die Protokolle der
 Integration in der Gladys-Oberfläche (oder `docker logs` auf dem Host) mit
 `LOG_LEVEL=debug` für alle Details.
 
