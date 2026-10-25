@@ -6,7 +6,7 @@ sous forme de capteurs, à afficher en graphique et à utiliser dans vos scènes
 pour faire tourner vos appareils quand l'électricité est la plus propre.
 
 Elle fournit aussi un **widget** pour le tableau de bord, un **déclencheur** et
-une **action** pour vos scènes. Elle demande **Gladys 5.1.0 ou plus récent**.
+une **action** pour vos scènes. Elle demande **Gladys 5.3.0 ou plus récent**.
 
 ## Ce que vous obtenez
 
@@ -111,7 +111,7 @@ Gladys.
 
 ## Le widget du tableau de bord
 
-Depuis Gladys 5.1, l'intégration ajoute une carte **Carbone du réseau** dans le
+L'intégration ajoute une carte **Carbone du réseau** dans le
 sélecteur de widgets de votre tableau de bord. Elle affiche :
 
 - la **zone** suivie, le **niveau carbone** du moment et l'**heure de la

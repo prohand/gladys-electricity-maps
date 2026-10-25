@@ -6,6 +6,17 @@ All notable changes to this integration are documented here. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- Catalog search keywords (CO2 Signal, electricityMap, CO2, emissions, grid mix…), so the
+  integration is easier to find in the Gladys catalog.
+
+### Changed
+
+- Gladys 5.3.0 or later is now required.
+- Updated the Gladys SDK to 0.16; the grid carbon category, types and unit now come from its
+  constants.
+
 ## [2.3.1] - 2026-10-23
 
 - Maintenance release, no functional change.

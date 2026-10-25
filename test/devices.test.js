@@ -144,6 +144,21 @@ test('every feature is published in the grid carbon category', () => {
   );
 });
 
+test('the published category, types and unit keep their literal values', () => {
+  // The SDK constants must resolve to the strings the users' devices were
+  // created with: a different value would be a different feature.
+  const gladys = createFakeGladys();
+  const [device] = buildDiscoveredDevices(gladys, config);
+  assert.deepEqual(
+    device.features.map((f) => [f.category, f.type, f.unit]),
+    [
+      ['grid-carbon-sensor', 'carbon-intensity', 'gram-co2eq-per-kilowatt-hour'],
+      ['grid-carbon-sensor', 'carbon-free-percentage', 'percent'],
+      ['grid-carbon-sensor', 'renewable-percentage', 'percent'],
+    ],
+  );
+});
+
 test('the carbon intensity declares the gCO2eq/kWh unit, not a unit in its name', () => {
   const gladys = createFakeGladys();
   const [device] = buildDiscoveredDevices(gladys, config);

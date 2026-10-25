@@ -9,7 +9,7 @@ dependency: `@gladysassistant/integration-sdk`) that publishes the carbon intens
 electricity consumed in one [Electricity Maps](https://www.electricitymaps.com) zone: carbon
 intensity (gCO2eq/kWh), carbon-free share and, when the plan allows it, renewable share. One
 device per zone. Needs an Electricity Maps API token (the free "Home Assistant" access works).
-Gladys 5.1+ adds a dashboard widget, a scene trigger and a scene action.
+It adds a dashboard widget, a scene trigger and a scene action, and requires Gladys 5.3.0+.
 
 ## Commands
 
@@ -78,7 +78,8 @@ src/widgets.js            dashboard widget (tiles coloured after what they read)
 ### Manifest
 
 `test/manifest.test.js` keeps `gladys-assistant-integration.json` in sync with `DEFAULT_CONFIG`,
-the interval bounds, the action handlers and the widget/scene keys (`gladys_version >=5.1.0`).
+the interval bounds, the action handlers, the widget/scene keys, the catalog shelves and the
+`keywords` (`gladys_version >=5.3.0`; no `countries`: the zones cover the world).
 
 ## Testing
 

@@ -79,6 +79,62 @@ test('declaring catalog categories requires Gladys >= 4.86.0', () => {
   );
 });
 
+// The store vocabulary of the catalog shelves: an unknown key is dropped by
+// the indexer with a mere warning, so a typo would silently cost the shelf.
+const CATALOG_CATEGORIES = [
+  'climate',
+  'lighting',
+  'energy',
+  'security',
+  'multimedia',
+  'appliances',
+  'environment',
+  'protocols',
+  'network',
+  'notifications',
+  'assistants',
+  'services',
+  'transport',
+  'vehicles',
+  'servers',
+  'leisure',
+];
+
+test('the catalog shelves are energy and environment, both known keys', () => {
+  assert.deepEqual(manifest.categories, ['energy', 'environment']);
+  for (const category of manifest.categories) {
+    assert.ok(CATALOG_CATEGORIES.includes(category), `unknown category "${category}"`);
+  }
+});
+
+test('keywords: 1 to 10 unique search terms of 2 to 30 characters', () => {
+  const { keywords } = manifest;
+  assert.ok(Array.isArray(keywords) && keywords.length >= 1 && keywords.length <= 10);
+  for (const keyword of keywords) {
+    assert.equal(typeof keyword, 'string');
+    const length = keyword.trim().length;
+    assert.ok(length >= 2 && length <= 30, `keyword "${keyword}": ${length} characters`);
+  }
+  const normalized = keywords.map((keyword) => keyword.trim().toLowerCase());
+  assert.equal(new Set(normalized).size, normalized.length, 'keywords must be unique');
+});
+
+test('no countries: Electricity Maps covers zones all over the world', () => {
+  // Declaring countries would hide the integration from the catalog of every
+  // instance located elsewhere.
+  assert.equal(manifest.countries, undefined);
+});
+
+test('declaring keywords, countries or music requires Gladys >= 5.3.0', () => {
+  // Same rule as `categories`: an older core rejects any unknown manifest field.
+  assert.ok(['keywords', 'countries', 'music'].some((field) => field in manifest));
+  const [, major, minor] = manifest.gladys_version.match(/>=\s*(\d+)\.(\d+)\.\d+/).map(Number);
+  assert.ok(
+    major > 5 || (major === 5 && minor >= 3),
+    `keywords require gladys_version >= 5.3.0, got "${manifest.gladys_version}"`,
+  );
+});
+
 test('the integration declares itself as cloud-only', () => {
   // Electricity Maps is a public HTTP API: there is no LAN path, so no
   // "Prefer the local connection" toggle and no GLADYS_PREFER_LOCAL key.

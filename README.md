@@ -39,9 +39,9 @@ the UI, but they show up, and the values are the same.
 
 Two consequences worth knowing:
 
-- the category, the types and the unit (`gram-co2eq-per-kilowatt-hour`) are not
-  exported by the published SDK yet, so `src/features.js` mirrors the core
-  strings and prefers the SDK constants as soon as a release carries them;
+- the category, the types and the unit (`gram-co2eq-per-kilowatt-hour`) come
+  from the SDK constants (`DEVICE_FEATURE_*`, a verbatim mirror of the core's),
+  never from hand-written strings;
 - the core upserts the **params** of an already-created device on re-publish,
   never its feature categories: a device created while the fallback was active
   keeps its "Unknown" features. Delete it and re-add it from the **Discover**
@@ -58,7 +58,7 @@ the other.
 
 ## Dashboard widget, scene trigger and scene action
 
-Gladys 5.1 lets an external integration extend the dashboard and the scene
+Gladys lets an external integration extend the dashboard and the scene
 editor from its manifest. This integration declares one of each, all built on
 the **last reading the refresh loop already did** (`src/gridSnapshot.js`): none
 of them ever costs an extra Electricity Maps request unless the user explicitly
@@ -251,13 +251,13 @@ public and carry the GitHub topic `gladys-assistant-integration`.
 
 ## Notes
 
-- Requires **Node.js ≥ 20** (built-in global `fetch`, no HTTP dependency).
-- Requires **Gladys ≥ 5.1.0**: the `widgets`, `scene_triggers` and
-  `scene_actions` manifest fields appeared there, and an older core rejects the
-  whole manifest on any field it does not know (the same rule as `categories`).
-- No standard Gladys unit exists for gCO₂eq/kWh: the carbon intensity feature
-  uses the generic `unknown` category and carries its unit in its name. The two
-  percentages use the standard `percent` unit.
+- Requires **Node.js ≥ 22** (built-in global `fetch`, no HTTP dependency).
+- Requires **Gladys ≥ 5.3.0**: the catalog `keywords` appeared there (the
+  `widgets`, `scene_triggers` and `scene_actions` fields in 5.1.0), and an older
+  core rejects the whole manifest on any field it does not know (the same rule
+  as `categories`).
+- The carbon intensity uses the core's `gram-co2eq-per-kilowatt-hour` unit; the
+  two percentages use the standard `percent` unit.
 - `transports: ["cloud"]` — Electricity Maps is a public HTTP API, there is no
   LAN path, so Gladys shows no "Prefer the local connection" toggle.
 - API errors are translated into actionable messages (bad token, zone not
