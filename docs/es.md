@@ -6,7 +6,7 @@ sensores que puede mostrar en gráficos y usar en escenas para poner en marcha
 sus aparatos cuando la electricidad es más limpia.
 
 También incluye un **widget** para el panel, un **disparador** de escena y una
-**acción** de escena. Requiere **Gladys 5.1.0 o posterior**.
+**acción** de escena. Requiere **Gladys 5.3.0 o posterior**.
 
 ## Qué obtiene
 
@@ -114,7 +114,7 @@ Gladys.
 
 ## El widget del panel
 
-Desde Gladys 5.1, la integración añade una tarjeta **Carbono de la red** al
+La integración añade una tarjeta **Carbono de la red** al
 selector de widgets de su panel. Muestra:
 
 - la **zona** que sigue, el **nivel de carbono** actual y la **hora del

@@ -6,7 +6,7 @@ sensors you can chart, and use in scenes to run your appliances when the
 electricity is cleanest.
 
 It also ships a dashboard **widget**, a scene **trigger** and a scene
-**action**. It requires **Gladys 5.1.0 or later**.
+**action**. It requires **Gladys 5.3.0 or later**.
 
 ## What you get
 
@@ -106,7 +106,7 @@ Gladys.
 
 ## The dashboard widget
 
-Since Gladys 5.1 the integration adds a **Grid carbon** card to the widget
+The integration adds a **Grid carbon** card to the widget
 picker of your dashboard. It shows:
 
 - the **zone** you follow, the current **carbon level** and the **hour of the

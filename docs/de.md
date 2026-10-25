@@ -6,7 +6,7 @@ als Sensoren bereit, die du als Diagramm anzeigen und in Szenen verwenden
 kannst, um deine Geräte dann laufen zu lassen, wenn der Strom am saubersten ist.
 
 Außerdem bringt sie ein **Widget** für das Dashboard, einen Szenen-**Auslöser**
-und eine Szenen-**Aktion** mit. Sie erfordert **Gladys 5.1.0 oder neuer**.
+und eine Szenen-**Aktion** mit. Sie erfordert **Gladys 5.3.0 oder neuer**.
 
 ## Was du erhältst
 
@@ -119,7 +119,7 @@ Gladys gelöscht werden.
 
 ## Das Dashboard-Widget
 
-Seit Gladys 5.1 fügt die Integration der Widget-Auswahl deines Dashboards eine
+Die Integration fügt der Widget-Auswahl deines Dashboards eine
 Karte **Netz-CO₂** hinzu. Sie zeigt:
 
 - die verfolgte **Zone**, die aktuelle **CO₂-Stufe** und die **Stunde des
